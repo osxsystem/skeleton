@@ -322,3 +322,16 @@ These are pinned for the skeleton; reassess when the product domain is concrete:
 - [ ] Write one passing `commonTest` covering the stub VM's state transitions
 - [ ] **Token-drift smoke test:** change `Typography.body.size` from `16f` to `18f` in shared, rebuild both apps, confirm both update without further code changes
 - [ ] Pick & wire a CI provider (GitHub Actions to start)
+
+## Installation
+
+```bash
+git clone https://github.com/<your-username>/skeleton.git
+cd skeleton
+```
+
+No additional package manager installation step is required — Gradle downloads all dependencies automatically on first build. Ensure `JAVA_HOME` points to JDK 21 and `ANDROID_HOME` is set before running any Gradle task.
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for the full text.
