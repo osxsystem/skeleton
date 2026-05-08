@@ -36,9 +36,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 - [x] 01-01-PLAN.md — Version catalog + root Gradle config (SCAF-04)
 - [x] 01-02-PLAN.md — :shared-core module: AGP-9 KMP plugin, SQLDelight, Ktor, vanniktech (SCAF-01, SCAF-03, SCAF-07, SCAF-08)
-- [ ] 01-03-PLAN.md — :shared-components umbrella framework, SKIE, KMMBridge (SCAF-02, SCAF-03, SCAF-07)
-- [ ] 01-04-PLAN.md — :shared-app module + GreetingViewModel + commonTest (SCAF-01, SCAF-06, SCAF-10)
-- [ ] 01-05-PLAN.md — SKIE generics validation pattern + SkieGenericsTest (SCAF-02, SCAF-11)
+- [x] 01-03-PLAN.md — :shared-components umbrella framework, SKIE, KMMBridge (SCAF-02, SCAF-03, SCAF-07)
+- [x] 01-04-PLAN.md — :shared-app module + GreetingViewModel + commonTest (SCAF-01, SCAF-06, SCAF-10)
+- [x] 01-05-PLAN.md — SKIE generics validation pattern + SkieGenericsTest (SCAF-02, SCAF-11)
 - [ ] 01-06-PLAN.md — :androidApp Koin boot + GreetingScreen (SCAF-01, SCAF-06)
 - [ ] 01-07-PLAN.md — :server Ktor module shell with /health route (SCAF-07)
 - [ ] 01-08-PLAN.md — iOS Xcode project + IosViewModelStoreOwner + GreetingScreen (SCAF-02, SCAF-05, SCAF-06)
