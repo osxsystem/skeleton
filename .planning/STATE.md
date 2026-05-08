@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-05-08T10:49:16.149Z"
-last_activity: 2026-05-08 -- Phase 01 planning complete
+last_updated: "2026-05-08T10:51:14.762Z"
+last_activity: 2026-05-08 -- Phase 01 execution started
 progress:
   total_phases: 7
   completed_phases: 0
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-08)
 
 **Core value:** Cloning this skeleton gives a new product, on day one, a correct KMP scaffold and the four UI primitives every mobile product re-implements badly: forms, amount input, navigation, and notifications.
-**Current focus:** Phase 1 — KMP Scaffold + Tooling
+**Current focus:** Phase 01 — kmp-scaffold-tooling
 
 ## Current Position
 
-Phase: 1 of 7 (KMP Scaffold + Tooling)
-Plan: 0 of TBD in current phase
-Status: Ready to execute
-Last activity: 2026-05-08 -- Phase 01 planning complete
+Phase: 01 (kmp-scaffold-tooling) — EXECUTING
+Plan: 1 of 10
+Status: Executing Phase 01
+Last activity: 2026-05-08 -- Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
