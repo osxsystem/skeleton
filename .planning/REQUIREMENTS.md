@@ -203,13 +203,96 @@ Phase mapping populated by `/gsd-roadmapper`.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmapper) | | |
+| SCAF-01 | Phase 1 | Pending |
+| SCAF-02 | Phase 1 | Pending |
+| SCAF-03 | Phase 1 | Pending |
+| SCAF-04 | Phase 1 | Pending |
+| SCAF-05 | Phase 1 | Pending |
+| SCAF-06 | Phase 1 | Pending |
+| SCAF-07 | Phase 1 | Pending |
+| SCAF-08 | Phase 1 | Pending |
+| SCAF-09 | Phase 1 | Pending |
+| SCAF-10 | Phase 1 | Pending |
+| SCAF-11 | Phase 1 | Pending |
+| THEME-01 | Phase 2 | Pending |
+| THEME-02 | Phase 2 | Pending |
+| THEME-03 | Phase 2 | Pending |
+| THEME-04 | Phase 2 | Pending |
+| THEME-05 | Phase 2 | Pending |
+| FORM-01 | Phase 3 | Pending |
+| FORM-02 | Phase 3 | Pending |
+| FORM-03 | Phase 3 | Pending |
+| FORM-04 | Phase 3 | Pending |
+| FORM-05 | Phase 3 | Pending |
+| FORM-06 | Phase 3 | Pending |
+| FORM-07 | Phase 3 | Pending |
+| FORM-08 | Phase 3 | Pending |
+| FORM-09 | Phase 3 | Pending |
+| FORM-10 | Phase 3 | Pending |
+| FORM-11 | Phase 3 | Pending |
+| AMT-01 | Phase 3 | Pending |
+| AMT-02 | Phase 3 | Pending |
+| AMT-03 | Phase 3 | Pending |
+| AMT-04 | Phase 3 | Pending |
+| AMT-05 | Phase 3 | Pending |
+| AMT-06 | Phase 3 | Pending |
+| AMT-07 | Phase 3 | Pending |
+| AMT-08 | Phase 3 | Pending |
+| AMT-09 | Phase 3 | Pending |
+| AMT-10 | Phase 3 | Pending |
+| INAPP-01 | Phase 3 | Pending |
+| INAPP-02 | Phase 3 | Pending |
+| INAPP-03 | Phase 3 | Pending |
+| INAPP-04 | Phase 3 | Pending |
+| INAPP-05 | Phase 3 | Pending |
+| INAPP-06 | Phase 3 | Pending |
+| INAPP-07 | Phase 3 | Pending |
+| INAPP-08 | Phase 3 | Pending |
+| INAPP-09 | Phase 3 | Pending |
+| INAPP-10 | Phase 3 | Pending |
+| PUSH-01 | Phase 4 | Pending |
+| PUSH-02 | Phase 4 | Pending |
+| PUSH-03 | Phase 4 | Pending |
+| PUSH-04 | Phase 4 | Pending |
+| PUSH-05 | Phase 4 | Pending |
+| PUSH-06 | Phase 4 | Pending |
+| PUSH-07 | Phase 4 | Pending |
+| PUSH-08 | Phase 4 | Pending |
+| PUSH-09 | Phase 4 | Pending |
+| PUSH-10 | Phase 4 | Pending |
+| PUSH-11 | Phase 4 | Pending |
+| PUSH-12 | Phase 4 | Pending |
+| NAV-01 | Phase 5 | Pending |
+| NAV-02 | Phase 5 | Pending |
+| NAV-03 | Phase 5 | Pending |
+| NAV-04 | Phase 5 | Pending |
+| NAV-05 | Phase 5 | Pending |
+| NAV-06 | Phase 5 | Pending |
+| NAV-07 | Phase 5 | Pending |
+| NAV-08 | Phase 5 | Pending |
+| NAV-09 | Phase 5 | Pending |
+| NAV-10 | Phase 5 | Pending |
+| NET-01 | Phase 6 | Pending |
+| NET-02 | Phase 6 | Pending |
+| NET-03 | Phase 6 | Pending |
+| DB-01 | Phase 6 | Pending |
+| DB-02 | Phase 6 | Pending |
+| SHOW-01 | Phase 6 | Pending |
+| SHOW-02 | Phase 6 | Pending |
+| SHOW-03 | Phase 6 | Pending |
+| SHOW-04 | Phase 6 | Pending |
+| PUB-01 | Phase 7 | Pending |
+| PUB-02 | Phase 7 | Pending |
+| PUB-03 | Phase 7 | Pending |
+| PUB-04 | Phase 7 | Pending |
+| PUB-05 | Phase 7 | Pending |
+| PUB-06 | Phase 7 | Pending |
 
 **Coverage:**
-- v1 requirements: 67 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 67 ⚠️ (will resolve at roadmap creation)
+- v1 requirements: 84 total (REQUIREMENTS.md header previously said 67 — actual count is 84 after full enumeration)
+- Mapped to phases: 84
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-08*
-*Last updated: 2026-05-08 after initialization*
+*Last updated: 2026-05-08 after roadmap creation (traceability populated)*
