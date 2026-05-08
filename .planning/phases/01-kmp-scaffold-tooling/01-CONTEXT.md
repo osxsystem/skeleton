@@ -23,13 +23,13 @@ A multi-module Gradle project (`:shared-core`, `:shared-components`, `:shared-ap
 ### Group ID / namespace
 - **D-03:** Group ID is **`dev.viethung`** — committed from day 1 in `gradle/libs.versions.toml`, every `commonMain/kotlin/dev/viethung/...` package path, and the iOS bundle ID prefix (`dev.viethung.skeleton.*`). Replaces the `dev.skeleton` placeholder. Rationale: domain-backed coordinate that Maven Central will accept at Phase 7 publish; no rename PR ever.
 - **D-04:** Package layout: `dev.viethung.core.*` in `:shared-core`, `dev.viethung.components.*` in `:shared-components`, `dev.viethung.showcase.*` in `:shared-app`, `dev.viethung.skeleton.android.*` in `:androidApp`. iOS Swift code uses `import SkeletonKit` (the framework `baseName`).
-- **D-05:** Domain ownership of `viethung.dev` is required only at Phase 7 publish — not now.
+- **D-05 [informational]:** Domain ownership of `viethung.dev` is required only at Phase 7 publish — not now.
 
 ### Forward-loaded toolchain
 - **D-06:** **vanniktech maven-publish `0.36.0`** is applied to `:shared-core` and `:shared-components` in Phase 1. CI runs `./gradlew publishToMavenLocal` and asserts the artifacts are emitted to `~/.m2/repository/dev/viethung/`. No remote publish; no signing key required yet. Rationale: Pitfall 22 (Maven Central duplicate publish) is partly mitigated by exercising the publish path early; immutable Maven Central makes Phase-7-only validation expensive.
 - **D-07:** **KMMBridge `1.1.0`** is wired to `:shared-components` in Phase 1, but emits the `SkeletonKit.xcframework` to a **local Gradle path (`build/spm/`)** only — no companion GitHub repo, no SPM repo push, no CI write-token. CI verifies the XCFramework is produced and `Package.swift` is generated. Real SPM repo push deferred to Phase 7.
 - **D-08:** **`:server` Ktor module skeleton** is created in Phase 1 with `ktor-server-cio 3.4.0`, `ktor-server-content-negotiation 3.4.0`, `ktor-serialization-kotlinx-json 3.4.0`. Exposes one `/health` route returning 200 OK. `./gradlew :server:run` starts it on `localhost:8080`. The `:server` module is **never published**. Real `POST /token` and `POST /send` routes belong in Phase 4.
-- **D-09:** Fallback if KMMBridge maintenance fails before Phase 7: switch to `ge-org/multiplatform-swiftpackage`. Same XCFramework → SPM flow; track `touchlab/KMMBridge` activity.
+- **D-09 [informational]:** Fallback if KMMBridge maintenance fails before Phase 7: switch to `ge-org/multiplatform-swiftpackage`. Same XCFramework → SPM flow; track `touchlab/KMMBridge` activity.
 
 ### Sample feature shape
 - **D-10:** A single cohesive **`Greeting` feature** satisfies SCAF-06 (sample VM resolvable from both Koin graphs), SCAF-08 (SQLDelight hello-world query), and SCAF-10 (one passing `commonTest`):
