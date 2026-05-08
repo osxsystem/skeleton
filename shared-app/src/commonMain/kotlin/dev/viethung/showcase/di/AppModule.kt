@@ -3,6 +3,7 @@ package dev.viethung.showcase.di
 import dev.viethung.core.di.coreModule
 import dev.viethung.showcase.greeting.GetGreetingUseCase
 import dev.viethung.showcase.greeting.GreetingViewModel
+import org.koin.core.context.startKoin
 import org.koin.dsl.module
 
 /**
@@ -17,4 +18,15 @@ val appModule = module {
 
     factory { GetGreetingUseCase(get()) }
     factory { GreetingViewModel(get()) }
+}
+
+/**
+ * Top-level Koin initialization entry point.
+ * Called from iOS via AppModuleKt.doInitKoin() (SKIE/KMP name mangling maps initKoin → doInitKoin).
+ * Called from androidApp directly via startKoin { modules(appModule) }.
+ */
+fun initKoin() {
+    startKoin {
+        modules(appModule)
+    }
 }
