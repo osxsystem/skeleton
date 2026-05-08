@@ -32,7 +32,18 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. CI passes both jobs (Android on ubuntu-latest, iOS on macos-14 with timeout-minutes 30) on a hello-world commit; the iOS job runs `iosSimulatorArm64Test` as a separate step
   4. A sample ViewModel is resolvable from both Android and iOS Koin entry points; one `commonTest` passes on both platforms using `kotlin.test.Test` (not org.junit.Test)
   5. The generated `SkeletonKit.framework/Headers/` contains no `Any?` in Flow or sealed-class signatures; SQLDelight hello-world query runs on both platforms without a crash
-**Plans**: TBD
+**Plans**: 10 plans
+Plans:
+- [ ] 01-01-PLAN.md — Version catalog + root Gradle config (SCAF-04)
+- [ ] 01-02-PLAN.md — :shared-core module: AGP-9 KMP plugin, SQLDelight, Ktor, vanniktech (SCAF-01, SCAF-03, SCAF-07, SCAF-08)
+- [ ] 01-03-PLAN.md — :shared-components umbrella framework, SKIE, KMMBridge (SCAF-02, SCAF-03, SCAF-07)
+- [ ] 01-04-PLAN.md — :shared-app module + GreetingViewModel + commonTest (SCAF-01, SCAF-06, SCAF-10)
+- [ ] 01-05-PLAN.md — SKIE generics validation pattern + SkieGenericsTest (SCAF-02, SCAF-11)
+- [ ] 01-06-PLAN.md — :androidApp Koin boot + GreetingScreen (SCAF-01, SCAF-06)
+- [ ] 01-07-PLAN.md — :server Ktor module shell with /health route (SCAF-07)
+- [ ] 01-08-PLAN.md — iOS Xcode project + IosViewModelStoreOwner + GreetingScreen (SCAF-02, SCAF-05, SCAF-06)
+- [ ] 01-09-PLAN.md — GitHub Actions CI: Android + iOS jobs with all validation gates (SCAF-09, SCAF-10, SCAF-11)
+- [ ] 01-10-PLAN.md — architecture.md + docs/ARCHITECTURE.md multi-module reconciliation (SCAF-01, SCAF-02, SCAF-03)
 
 **Pitfall refs**: Pitfall 1 (viewModelScope iOS lifecycle leak), Pitfall 2 (@StateObject vs @ObservedObject), Pitfall 3 (SKIE + Kotlin lock-step), Pitfall 4 (SKIE generic type erasure), Pitfall 5 (@Throws on suspend fns), Pitfall 18 (kotlin.test.Test annotation), Pitfall 19 (SQLDelight -lsqlite3 flag), Pitfall 20 (AGP 9 plugin incompatibility), Pitfall 21 (baseName "shared" conflict), Pitfall 23 (iOS simulator CI flakiness)
 
@@ -152,7 +163,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. KMP Scaffold + Tooling | 0/TBD | Not started | - |
+| 1. KMP Scaffold + Tooling | 0/10 | In Progress | - |
 | 2. Design Token Bridge | 0/TBD | Not started | - |
 | 3. Forms + Amount Input + In-App Notifications | 0/TBD | Not started | - |
 | 4. Push Notifications | 0/TBD | Not started | - |
