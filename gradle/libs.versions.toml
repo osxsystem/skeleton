@@ -1,0 +1,102 @@
+[versions]
+# Update these four together — see SKIE compatibility matrix before bumping any one of them
+kotlin                  = "2.3.21"
+ksp                     = "2.3.21-2.0.4"
+agp                     = "9.2.0"
+skie                    = "0.10.11"
+
+androidx-lifecycle      = "2.10.0"
+compose-bom             = "2026.05.00"
+navigation3             = "1.1.1"
+coil                    = "3.4.0"
+
+ktor                    = "3.4.0"
+sqldelight              = "2.3.2"
+koin                    = "4.2.1"
+kmmbridge               = "1.1.0"
+vanniktech-publish      = "0.36.0"
+
+kotlinx-coroutines      = "1.10.2"
+kotlinx-serialization   = "1.10.0"
+kotlinx-datetime        = "0.7.1"
+
+firebase-bom            = "34.13.0"
+
+turbine                 = "1.2.1"
+kotest-assertions       = "5.9.1"
+
+[libraries]
+# Lifecycle / ViewModel
+androidx-lifecycle-viewmodel         = { module = "androidx.lifecycle:lifecycle-viewmodel",           version.ref = "androidx-lifecycle" }
+androidx-lifecycle-runtime-compose   = { module = "androidx.lifecycle:lifecycle-runtime-compose",     version.ref = "androidx-lifecycle" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose",   version.ref = "androidx-lifecycle" }
+
+# Compose BOM
+androidx-compose-bom              = { module = "androidx.compose:compose-bom",                  version.ref = "compose-bom" }
+androidx-compose-material3        = { module = "androidx.compose.material3:material3" }
+androidx-compose-ui-test-junit4   = { module = "androidx.compose.ui:ui-test-junit4-android" }
+androidx-compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+
+# Navigation 3
+navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
+navigation3-ui      = { module = "androidx.navigation3:navigation3-ui",      version.ref = "navigation3" }
+
+# Coil
+coil-compose      = { module = "io.coil-kt.coil3:coil-compose",       version.ref = "coil" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
+
+# Ktor client
+ktor-client-core                = { module = "io.ktor:ktor-client-core",                version.ref = "ktor" }
+ktor-client-okhttp              = { module = "io.ktor:ktor-client-okhttp",              version.ref = "ktor" }
+ktor-client-darwin              = { module = "io.ktor:ktor-client-darwin",              version.ref = "ktor" }
+ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktor-client-logging             = { module = "io.ktor:ktor-client-logging",             version.ref = "ktor" }
+ktor-serialization-json         = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+
+# Ktor server (server module only — never published)
+ktor-server-cio                  = { module = "io.ktor:ktor-server-cio",                  version.ref = "ktor" }
+ktor-server-content-negotiation  = { module = "io.ktor:ktor-server-content-negotiation",  version.ref = "ktor" }
+
+# SQLDelight
+sqldelight-gradle-plugin  = { module = "app.cash.sqldelight:gradle-plugin",        version.ref = "sqldelight" }
+sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver",       version.ref = "sqldelight" }
+sqldelight-native-driver  = { module = "app.cash.sqldelight:native-driver",        version.ref = "sqldelight" }
+sqldelight-coroutines     = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
+
+# Koin
+koin-core    = { module = "io.insert-koin:koin-core",            version.ref = "koin" }
+koin-android = { module = "io.insert-koin:koin-android",         version.ref = "koin" }
+koin-compose = { module = "io.insert-koin:koin-androidx-compose", version.ref = "koin" }
+
+# KotlinX
+kotlinx-coroutines-core    = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core",   version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-test    = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test",   version.ref = "kotlinx-coroutines" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-datetime           = { module = "org.jetbrains.kotlinx:kotlinx-datetime",          version.ref = "kotlinx-datetime" }
+
+# Firebase (androidApp only)
+firebase-bom       = { module = "com.google.firebase:firebase-bom",     version.ref = "firebase-bom" }
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+
+# Testing
+turbine              = { module = "app.cash.turbine:turbine",           version.ref = "turbine" }
+
+# Kotest assertions (commonTest — assertions only, NOT the Kotest engine)
+kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest-assertions" }
+
+# KMMBridge
+# (plugin only — no library artifact)
+
+# vanniktech maven-publish
+# (plugin only — no library artifact)
+
+[plugins]
+kotlin-multiplatform  = { id = "org.jetbrains.kotlin.multiplatform",         version.ref = "kotlin" }
+kotlin-serialization  = { id = "org.jetbrains.kotlin.plugin.serialization",  version.ref = "kotlin" }
+android-application   = { id = "com.android.application",                    version.ref = "agp" }
+android-kmp-library   = { id = "com.android.kotlin.multiplatform.library",   version.ref = "agp" }
+ksp                   = { id = "com.google.devtools.ksp",                    version.ref = "ksp" }
+skie                  = { id = "co.touchlab.skie",                           version.ref = "skie" }
+kmmbridge             = { id = "co.touchlab.kmmbridge",                      version.ref = "kmmbridge" }
+sqldelight            = { id = "app.cash.sqldelight",                        version.ref = "sqldelight" }
+vanniktech-publish    = { id = "com.vanniktech.maven.publish",               version.ref = "vanniktech-publish" }
