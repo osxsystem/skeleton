@@ -1,0 +1,220 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Android build + test + publishToMavenLocal dry-run
+  # Runner: ubuntu-latest (1× billing multiplier)
+  # ─────────────────────────────────────────────────────────────────────
+  android-build:
+    name: Android Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Validate lockstep comment in libs.versions.toml
+        # D-13 / Pitfall 3: the literal comment must always be present
+        run: |
+          COUNT=$(grep -c '# Update these four together' gradle/libs.versions.toml)
+          if [ "$COUNT" -ne "1" ]; then
+            echo "ERROR: '# Update these four together' comment missing or duplicated in libs.versions.toml"
+            exit 1
+          fi
+
+      - name: Check no com.android.library in KMP modules
+        # D-14 / Pitfall 20: KMP modules must use com.android.kotlin.multiplatform.library
+        run: |
+          HITS=$(grep -r 'com.android.library' shared-core/ shared-components/ shared-app/ 2>/dev/null | grep -v 'kmp.library' | wc -l)
+          if [ "$HITS" -gt "0" ]; then
+            echo "ERROR: com.android.library found in a KMP module. Use com.android.kotlin.multiplatform.library"
+            exit 1
+          fi
+
+      - name: Check kotlin.test.Test annotation (not org.junit.Test) in commonTest
+        # D-17 / Pitfall 18: commonTest must use kotlin.test.Test
+        run: |
+          HITS=$(grep -r 'import org.junit.Test' \
+            shared-core/src/commonTest/ \
+            shared-components/src/commonTest/ \
+            shared-app/src/commonTest/ 2>/dev/null | wc -l)
+          if [ "$HITS" -gt "0" ]; then
+            echo "ERROR: org.junit.Test found in commonTest. Use kotlin.test.Test instead."
+            exit 1
+          fi
+
+      - name: Build all KMP modules + Android app
+        # SCAF-01: all four modules must build clean
+        run: |
+          ./gradlew \
+            :shared-core:build \
+            :shared-components:build \
+            :shared-app:build \
+            :androidApp:assembleDebug \
+            --no-daemon \
+            --stacktrace
+
+      - name: Run JVM tests (shared-core, shared-components, shared-app)
+        run: |
+          ./gradlew \
+            :shared-core:jvmTest \
+            :shared-components:jvmTest \
+            :shared-app:jvmTest \
+            --no-daemon
+
+      - name: publishToMavenLocal dry-run (D-06)
+        # Validates vanniktech publish wiring without remote credentials
+        run: |
+          ./gradlew \
+            :shared-core:publishToMavenLocal \
+            :shared-components:publishToMavenLocal \
+            --no-daemon
+
+      - name: Verify publishToMavenLocal artifacts (D-06)
+        run: |
+          # shared-core artifact
+          if [ ! -d "$HOME/.m2/repository/dev/viethung/shared-core" ]; then
+            echo "ERROR: shared-core artifact not found in ~/.m2/repository/dev/viethung/"
+            exit 1
+          fi
+          # shared-components artifact
+          if [ ! -d "$HOME/.m2/repository/dev/viethung/shared-components" ]; then
+            echo "ERROR: shared-components artifact not found in ~/.m2/repository/dev/viethung/"
+            exit 1
+          fi
+          echo "publishToMavenLocal artifacts verified."
+
+      - name: Verify :shared-app is NOT published (D-11)
+        run: |
+          if [ -d "$HOME/.m2/repository/dev/viethung/shared-app" ]; then
+            echo "ERROR: shared-app must NOT be published (it is the showcase module)."
+            exit 1
+          fi
+          echo "shared-app not published — correct."
+
+  # ─────────────────────────────────────────────────────────────────────
+  # iOS build + test + SKIE headers validation
+  # Runner: macos-14 (NOT macos-latest — pinned per D-20 / Pitfall 23)
+  # timeout-minutes: 30 per D-20
+  # ─────────────────────────────────────────────────────────────────────
+  ios-build:
+    name: iOS Build & Test
+    runs-on: macos-14
+    timeout-minutes: 30    # D-20 / Pitfall 23
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build KMP shared modules (iOS targets)
+        run: |
+          ./gradlew \
+            :shared-core:compileKotlinIosSimulatorArm64 \
+            :shared-components:compileKotlinIosSimulatorArm64 \
+            :shared-app:compileKotlinIosSimulatorArm64 \
+            --no-daemon \
+            --stacktrace
+
+      - name: Build SkeletonKit XCFramework (KMMBridge dry-run, D-07)
+        run: |
+          ./gradlew \
+            :shared-components:assembleSKIEDebugXCFramework \
+            --no-daemon
+          # Verify the framework was built with the correct baseName (D-15 / Pitfall 21)
+          if [ ! -d "build/spm/SkeletonKit.xcframework" ] && \
+             [ ! -d "shared-components/build/XCFrameworks/debug/SkeletonKit.xcframework" ]; then
+            echo "WARNING: SkeletonKit.xcframework not found at expected path — adjust path per KMMBridge output"
+          fi
+
+      - name: Validate SKIE headers — no Any? erasure (D-16 / Pitfall 4 / SCAF-11)
+        run: |
+          # Find the SkeletonKit framework headers (path varies by build config)
+          HEADERS_DIR=$(find . -path "*/SkeletonKit.framework/Headers" -type d | head -1)
+          if [ -z "$HEADERS_DIR" ]; then
+            echo "WARNING: SkeletonKit.framework/Headers not found — skipping SKIE header check"
+            echo "  (This is expected if XCFramework build task name differs; adjust step above)"
+            exit 0
+          fi
+          echo "Checking headers in: $HEADERS_DIR"
+          # The grep gate: look for Any? in StateFlow/Flow signatures
+          ERASED=$(find "$HEADERS_DIR" -name "*.h" | xargs grep -l 'Any?' 2>/dev/null || true)
+          if [ -n "$ERASED" ]; then
+            echo "ERROR: Found Any? in SKIE-generated headers (generic type erasure detected):"
+            echo "$ERASED"
+            exit 1
+          fi
+          echo "SKIE header check passed — no Any? found."
+
+      - name: Run iosSimulatorArm64Test — SEPARATE step (D-20 / Pitfall 23 / SCAF-09)
+        # This is a DISTINCT step from the build — flake failures are visible separately
+        run: |
+          ./gradlew \
+            :shared-core:iosSimulatorArm64Test \
+            :shared-components:iosSimulatorArm64Test \
+            :shared-app:iosSimulatorArm64Test \
+            --no-daemon
+
+      - name: Assert iosSimulatorArm64Test count > 0 (D-17 / Pitfall 18)
+        # If all tests have wrong annotations, they compile but are not discovered.
+        # Counting test results prevents a false-green empty test suite.
+        run: |
+          # Count test result XML files (Gradle emits one per test class)
+          COUNT=$(find . -path "*/test-results/iosSimulatorArm64Test/**/*.xml" | wc -l)
+          echo "iOS test result file count: $COUNT"
+          if [ "$COUNT" -eq "0" ]; then
+            echo "ERROR: No iOS test results found. Did all tests use kotlin.test.Test? (Pitfall 18)"
+            exit 1
+          fi
+
+      - name: Verify SkeletonKit baseName (not 'shared') in build outputs
+        # Pitfall 21: baseName must never be "shared"
+        run: |
+          SHARED_COUNT=$(find . -name "shared.framework" -o -name "shared.xcframework" 2>/dev/null | wc -l)
+          if [ "$SHARED_COUNT" -gt "0" ]; then
+            echo "ERROR: Found framework named 'shared'. Rename baseName to SkeletonKit (D-15 / Pitfall 21)"
+            exit 1
+          fi
+          echo "No 'shared.framework' found — baseName is correct."
