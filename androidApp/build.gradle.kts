@@ -1,11 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.multiplatform)    // needed for Kotlin compilation in androidApp
+    id("org.jetbrains.kotlin.plugin.compose") version "2.3.21"
     alias(libs.plugins.kotlin.serialization)
-}
-
-kotlin {
-    androidTarget()
 }
 
 android {
