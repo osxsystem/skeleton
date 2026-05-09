@@ -166,7 +166,11 @@ jobs:
           # Verify the framework was built with the correct baseName (D-15 / Pitfall 21)
           if [ ! -d "build/spm/SkeletonKit.xcframework" ] && \
              [ ! -d "shared-components/build/XCFrameworks/debug/SkeletonKit.xcframework" ]; then
-            echo "WARNING: SkeletonKit.xcframework not found at expected path — adjust path per KMMBridge output"
+            echo "ERROR: SkeletonKit.xcframework not found at either expected path."
+            echo "  Checked: build/spm/SkeletonKit.xcframework"
+            echo "  Checked: shared-components/build/XCFrameworks/debug/SkeletonKit.xcframework"
+            echo "  Fix: verify the assembleSKIEDebugXCFramework task output path and update this check."
+            exit 1
           fi
 
       - name: Validate SKIE headers — no Any? erasure (D-16 / Pitfall 4 / SCAF-11)
@@ -174,9 +178,11 @@ jobs:
           # Find the SkeletonKit framework headers (path varies by build config)
           HEADERS_DIR=$(find . -path "*/SkeletonKit.framework/Headers" -type d | head -1)
           if [ -z "$HEADERS_DIR" ]; then
-            echo "WARNING: SkeletonKit.framework/Headers not found — skipping SKIE header check"
-            echo "  (This is expected if XCFramework build task name differs; adjust step above)"
-            exit 0
+            echo "ERROR: SkeletonKit.framework/Headers not found — XCFramework build did not produce headers."
+            echo "  SCAF-11 cannot be verified. Fix the XCFramework build step before merging."
+            echo "  Hint: run './gradlew :shared-components:assembleSKIEDebugXCFramework' locally"
+            echo "  and check the output path with: find . -path '*/SkeletonKit.framework/Headers' -type d"
+            exit 1
           fi
           echo "Checking headers in: $HEADERS_DIR"
           # The grep gate: look for Any? in StateFlow/Flow signatures
