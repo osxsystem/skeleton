@@ -7,8 +7,15 @@ plugins {
 }
 
 kotlin {
-    // Android target
-    androidTarget()
+    android {
+        namespace = "dev.viethung.components"
+        compileSdk = 36
+        minSdk = 23
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
+        withHostTestBuilder { }
+    }
 
     // iOS targets — iosArm64 + iosSimulatorArm64 ONLY (D-01)
     listOf(
@@ -49,20 +56,12 @@ kotlin {
     }
 }
 
-android {
-    namespace = "dev.viethung.components"    // D-03, D-04
-    compileSdk = 36
-    defaultConfig {
-        minSdk = 23
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
-    }
-}
-
 // SKIE configuration (D-15, D-16)
+// NOTE: SKIE 0.10.11 does not support Kotlin 2.3.21 (supports up to 2.3.20).
+// Disabled temporarily — re-enable when SKIE releases Kotlin 2.3.21 support.
+// See: https://github.com/touchlab/SKIE/releases
 skie {
+    isEnabled = false
     analytics {
         enabled.set(false)
     }
@@ -71,8 +70,7 @@ skie {
 // KMMBridge: emit XCFramework locally — no remote publish in Phase 1 (D-07)
 // spm() uses KMMBridge default output; real SPM repo push deferred to Phase 7 per D-07
 kmmbridge {
-    // Placeholder for GitHub Packages / Releases remote wiring in Phase 7
-    addGithubPackagesRepository()
+    // Remote publish wiring deferred to Phase 7 (D-07); local XCFramework only for now
     spm()
     // Framework name must match baseName in kotlin {} block
     frameworkName.set("SkeletonKit")       // matches baseName = "SkeletonKit"
