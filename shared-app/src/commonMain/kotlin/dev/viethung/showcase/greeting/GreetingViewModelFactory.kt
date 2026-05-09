@@ -14,10 +14,18 @@ import kotlin.reflect.KClass
  *
  * Usage from Swift (IosViewModelStoreOwner pattern):
  *   let vm: GreetingViewModel = owner.viewModel(factory: GreetingViewModelFactoryKt.greetingViewModelFactory)
+ *
+ * CR-05 fix: resolve GetGreetingUseCase from Koin but construct GreetingViewModel(useCase)
+ * directly inside create(). This gives ViewModelProvider ownership of the instance,
+ * so viewModelStore.clear() in IosViewModelStoreOwner.deinit correctly calls onCleared()
+ * on the ViewModel that was actually used. (D-12 / SCAF-05 lifecycle contract.)
  */
 val greetingViewModelFactory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: KClass<T>, extras: CreationExtras): T {
-        return GlobalContext.get().get<GreetingViewModel>() as T
+        // Resolve the dependency from Koin — NOT the ViewModel itself.
+        val useCase = GlobalContext.get().get<GetGreetingUseCase>()
+        // Construct a fresh instance for the ViewModelStore to own.
+        return GreetingViewModel(useCase) as T
     }
 }
