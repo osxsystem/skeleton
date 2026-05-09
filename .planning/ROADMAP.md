@@ -42,8 +42,8 @@ Plans:
 - [x] 01-06-PLAN.md — :androidApp Koin boot + GreetingScreen (SCAF-01, SCAF-06)
 - [x] 01-07-PLAN.md — :server Ktor module shell with /health route (SCAF-07)
 - [x] 01-08-PLAN.md — iOS Xcode project + IosViewModelStoreOwner + GreetingScreen (SCAF-02, SCAF-05, SCAF-06)
-- [ ] 01-09-PLAN.md — GitHub Actions CI: Android + iOS jobs with all validation gates (SCAF-09, SCAF-10, SCAF-11)
-- [ ] 01-10-PLAN.md — architecture.md + docs/ARCHITECTURE.md multi-module reconciliation (SCAF-01, SCAF-02, SCAF-03)
+- [x] 01-09-PLAN.md — GitHub Actions CI: Android + iOS jobs with all validation gates (SCAF-09, SCAF-10, SCAF-11)
+- [x] 01-10-PLAN.md — architecture.md + docs/ARCHITECTURE.md multi-module reconciliation (SCAF-01, SCAF-02, SCAF-03)
 
 **Pitfall refs**: Pitfall 1 (viewModelScope iOS lifecycle leak), Pitfall 2 (@StateObject vs @ObservedObject), Pitfall 3 (SKIE + Kotlin lock-step), Pitfall 4 (SKIE generic type erasure), Pitfall 5 (@Throws on suspend fns), Pitfall 18 (kotlin.test.Test annotation), Pitfall 19 (SQLDelight -lsqlite3 flag), Pitfall 20 (AGP 9 plugin incompatibility), Pitfall 21 (baseName "shared" conflict), Pitfall 23 (iOS simulator CI flakiness)
 
