@@ -255,6 +255,14 @@ skeleton/
 └─ architecture.md                    # this file
 ```
 
+> **Multi-module shape (Phase 1 update — D-21):**
+> The `shared/` directory above reflects the original single-module sketch.
+> The implemented layout splits into **three KMP modules**:
+> `:shared-core` (DI, Ktor, SQLDelight, base repos), `:shared-components` (component ViewModels + expect/actual services),
+> and `:shared-app` (showcase-only wiring, never published).
+> See `.planning/REQUIREMENTS.md` **SCAF-01** for the authoritative module shape.
+> The MVVM + StateFlow + UDF pattern and `IosViewModelStoreOwner` contract remain unchanged.
+
 ---
 
 ## Relationship to `compose-multiplatform-core/`
