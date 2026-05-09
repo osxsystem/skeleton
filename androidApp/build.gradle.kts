@@ -33,7 +33,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":shared-app"))     // brings :shared-components + :shared-core transitively
+    implementation(project(":shared-app"))
+    implementation(project(":shared-core"))    // shared-app uses implementation() so shared-core types aren't on androidApp compile classpath; add explicitly
 
     // Compose BOM — use BOM, do not pin individual Compose versions (STACK.md §2)
     implementation(platform(libs.androidx.compose.bom))

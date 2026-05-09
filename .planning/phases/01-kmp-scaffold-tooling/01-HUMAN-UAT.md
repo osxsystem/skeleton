@@ -1,15 +1,15 @@
 ---
 status: partial
 phase: 01-kmp-scaffold-tooling
-source: [01-08-PLAN.md, 01-08-SUMMARY.md, 01-11-PLAN.md, 01-12-PLAN.md, 01-13-PLAN.md, 01-15-PLAN.md, 01-16-PLAN.md]
+source: [01-08-PLAN.md, 01-08-SUMMARY.md, 01-11-PLAN.md, 01-12-PLAN.md, 01-13-PLAN.md, 01-15-PLAN.md, 01-16-PLAN.md, 01-17-PLAN.md]
 started: 2026-05-09T00:00:00Z
-updated: 2026-05-09T22:00:00Z
+updated: 2026-05-09T14:30:00Z
 ---
 
 ## Current Test
 
-[awaiting human testing on Mac + Xcode 16]
-[BI-A/B/C/D/E closed by 01-15; BI-F migration done by 01-16 but blocked by new BI-G/BI-H/BI-I discovered during compilation — Android smoke still not green]
+Android smoke (BI-A through BI-H closed): PASSED (`./gradlew :androidApp:assembleDebug` exits 0; APK produced)
+iOS tests 1–7: blocked on BI-I (SKIE upstream — Kotlin 2.3.21 support not yet released) and BI-J (iOS framework linker — missing -lsqlite3 in shared-app + shared-components framework declarations)
 
 ## Post Gap-Closure Status (Plans 01-11..01-13)
 
@@ -38,17 +38,25 @@ Source commits (on `develop`): `d99e084`, `ac107bd`, `8de2a24`, `49f3671`, `4b05
 
 ### Partially migrated by 01-16 — BI-F DSL migration done; new blockers BI-G/BI-H/BI-I discovered
 
-- [x] **F. KMP modules use pre-AGP-9 `android {}` DSL.** PARTIALLY CLOSED by 01-16 — `shared-core`, `shared-components`, `shared-app` migrated to `kotlin { android { namespace; compileSdk; minSdk; compilerOptions { jvmTarget.JVM_21 }; withHostTestBuilder {} } }`. `androidTarget()` removed. Top-level `android {}` blocks deleted from KMP modules. `androidApp` dropped `kotlin.multiplatform` (built-in Kotlin + Compose Compiler plugin). BI-E bypass flags reverted. Build configuration now progresses past DSL errors. However, NEW compilation blockers surfaced (BI-G/BI-H/BI-I — see below). Android smoke is still NOT green.
+- [x] **F. KMP modules use pre-AGP-9 `android {}` DSL.** CLOSED by 01-16 (DSL migration) + 01-17 (downstream defects cleared) — `shared-core`, `shared-components`, `shared-app` use `kotlin { android { … withHostTestBuilder {} } }`; `androidTarget()` removed; top-level `android {}` deleted; `androidApp` dropped `kotlin.multiplatform` and uses Compose Compiler via catalog alias; BI-E bypass flags reverted; smoke now green via `./gradlew :androidApp:assembleDebug`.
 
-### Discovered during 01-16, NOT closed — current blockers
+### Discovered during 01-16, closed by 01-17
 
-- [ ] **G. `GreetingViewModelFactory.kt` uses `GlobalContext` in `commonMain` — unresolved on non-JVM targets (BLOCKING).** `shared-app/src/commonMain/kotlin/.../GreetingViewModelFactory.kt:6` imports `org.koin.core.context.GlobalContext` which is not available in the Kotlin/Native metadata compilation (`compileCommonMainKotlinMetadata`) or iOS targets (`compileKotlinIosArm64`, `compileKotlinIosSimulatorArm64`). Fails with `Unresolved reference 'GlobalContext'`. This cascades to `:androidApp:compileDebugKotlin` which cannot resolve types from `:shared-app`. Fix: replace `GlobalContext.get().get<GetGreetingUseCase>()` with a Koin component pattern or pass the use-case as a constructor argument (removing the runtime Koin lookup from commonMain). Affected file: `shared-app/src/commonMain/kotlin/dev/viethung/showcase/greeting/GreetingViewModelFactory.kt` — outside plan 01-16 scope.
+- [x] **G. `GreetingViewModelFactory.kt` uses `GlobalContext` in `commonMain` — unresolved on non-JVM targets.** CLOSED by 01-17 — replaced `org.koin.core.context.GlobalContext` (JVM-favored) with `org.koin.mp.KoinPlatformTools.defaultContext()` (Koin 4.x KMP-correct accessor). `:shared-app:compileCommonMainKotlinMetadata` and Native targets now compile.
 
-- [ ] **H. Two `GreetingViewModelTest` tests fail on Android JVM host test (non-blocking if BI-G fixed separately).** `loadGreetingTransitionsToReady` and `loadGreetingOnErrorTransitionsToError` fail with `No item was found` from Turbine's `expectMostRecentItem()`. Root cause: `GreetingViewModel.loadGreeting()` uses `viewModelScope.launch` which requires a coroutine dispatcher; in the test context the coroutine may not complete before `expectMostRecentItem()` is called. Fix: use `advanceUntilIdle()` from `TestCoroutineScheduler` or `awaitItem()` with timeout instead of `expectMostRecentItem()`. Only `initialStateIsLoading` passes (1/3). Affected file: `shared-app/src/commonTest/kotlin/.../GreetingViewModelTest.kt` — outside plan 01-16 scope.
+- [x] **H. Two `GreetingViewModelTest` tests fail on Android JVM host test.** CLOSED by 01-17 — added `Dispatchers.setMain(StandardTestDispatcher())` + `Dispatchers.resetMain()` BeforeTest/AfterTest pair, and `advanceUntilIdle()` after each `vm.loadGreeting()` to synchronize on `viewModelScope.launch` completion. `:shared-app:allTests` now exits 0 with 3/3 passing.
 
-- [ ] **I. SKIE 0.10.11 does not support Kotlin 2.3.21 (BLOCKING for iOS, non-blocking for Android).** SKIE 0.10.11 supports Kotlin up to 2.3.20; the project uses 2.3.21. SKIE has been temporarily disabled (`skie { isEnabled = false }`) in `shared-components/build.gradle.kts` to unblock Android configuration. This disables Swift interop generation; iOS build cannot produce `SkeletonKit.xcframework`. Fix: upgrade SKIE to a version supporting 2.3.21 (requires `libs.versions.toml` change, out of scope for 01-16). Alternatively, downgrade Kotlin to 2.3.20. Track for a dedicated plan.
+- [ ] **I. SKIE 0.10.11 does not support Kotlin 2.3.21 (UPSTREAM BLOCKER — non-blocking for Android).** SKIE 0.10.11 (latest upstream release as of 2026-05-09; published 2026-04-02) supports Kotlin 2.0.0 .. 2.3.20. The project pins Kotlin 2.3.21. No SKIE release with 2.3.21 support exists yet. Workaround `skie { isEnabled = false }` in `shared-components/build.gradle.kts` stays in place. Upstream check pattern (re-run periodically):
+  ```bash
+  gh api repos/touchlab/SKIE/releases --jq '.[0:3] | .[] | "\(.tag_name) - \(.published_at[:10])"'
+  ```
+  When a SKIE > 0.10.11 with 2.3.21 support ships, open a follow-up plan to bump `skie` in `gradle/libs.versions.toml` and remove the `isEnabled = false` line. Disabling SKIE blocks iOS XCFramework generation (Tests 1–7 cannot proceed) but does not affect Android assembleDebug. Tracked separately from build-infra A–H gates.
 
-**Current state:** A/B/C/D/E closed. F migration done (DSL correct) but blocked from closing completely by BI-G. G/H/I open. Android smoke (`./gradlew :androidApp:assembleDebug`) fails due to BI-G cascade. iOS Tests 1–7 remain blocked by BI-I.
+### Discovered during 01-17, NOT closed
+
+- [ ] **J. iOS framework linker missing `-lsqlite3` in `shared-app` and `shared-components` framework declarations (BLOCKING for iOS framework build, non-blocking for Android).** `shared-app/build.gradle.kts` and `shared-components/build.gradle.kts` iOS framework declarations do not include `linkerOpts.add("-lsqlite3")`. `shared-core/build.gradle.kts` correctly has it (line 27), but the umbrella frameworks in `shared-app` and `shared-components` do not inherit it. Error: `ld: Undefined symbols: _sqlite3_bind_blob, _sqlite3_bind_double, ...` during `:shared-app:linkDebugFrameworkIosArm64` and `:shared-components:linkReleaseFrameworkIosArm64`. Fix: add `linkerOpts.add("-lsqlite3")` to the `iosTarget.binaries.framework {}` block in both `shared-app/build.gradle.kts` and `shared-components/build.gradle.kts`. These files are outside 01-17 deviation-protocol scope. Assign to a follow-up plan.
+
+**Current state:** A through H closed (build-infra fully resolved for Android). I open as upstream blocker (SKIE/Kotlin compatibility). J open as iOS framework linker defect. Android smoke (`./gradlew :androidApp:assembleDebug`) PASSES. iOS Tests 1–7 remain blocked on BI-I and BI-J. 01-14 Android smoke checkpoint is unblocked; iOS UAT awaits BI-I and BI-J resolution.
 
 ## Tests
 
@@ -120,35 +128,37 @@ blocked: 0
   follow_up: "Long-term: either remove kotlin.multiplatform from androidApp or restructure to com.android.kotlin.multiplatform.library. See https://kotl.in/gradle/agp-new-kmp"
 
 - truth: "shared-* KMP build.gradle.kts files configure successfully under AGP 9"
-  status: partial
-  reason: "DSL migration done by 01-16 — all three modules now use kotlin { android { namespace; compileSdk; minSdk; compilerOptions; withHostTestBuilder {} } }. Configuration passes. But compilation fails due to BI-G (GlobalContext in commonMain)."
-  closed_by: "01-16 (commits 77e52e8, 5cac60a, 7fadc45) — DSL shape correct; blocked at compilation by BI-G"
+  status: closed
+  closed_by: "01-16 (commits 77e52e8, 5cac60a, 7fadc45) — DSL migration done; 01-17 (BI-G/H downstream cleared)"
   defect_id: BI-F
-  blocks: [1, 2, 3, 4, 5, 6, 7]
 
 - truth: "`./gradlew :androidApp:assembleDebug --no-daemon` exits 0"
-  status: failed
-  reason: ":shared-app:compileCommonMainKotlinMetadata fails: GreetingViewModelFactory.kt:6,27 imports org.koin.core.context.GlobalContext which is not resolvable in commonMain Kotlin metadata compilation. Error: 'Unresolved reference GlobalContext'. Cascades to :androidApp:compileDebugKotlin which cannot resolve types from :shared-app."
-  severity: blocker
+  status: closed
+  closed_by: "01-17 (commit — Task 4: BI-G fix, shared-core explicit dep, catalog alias)"
   defect_id: BI-G
-  artifacts: ["shared-app/src/commonMain/kotlin/dev/viethung/showcase/greeting/GreetingViewModelFactory.kt"]
-  recommendation: "Replace GlobalContext.get().get<GetGreetingUseCase>() with a pure constructor injection or KoinComponent pattern that works in commonMain (no runtime Koin context lookup). Fix is in a single source file outside plan 01-16 scope."
-  blocks: [1, 2, 3, 4, 5, 6, 7]
 
 - truth: "`./gradlew :shared-app:allTests --no-daemon` exits 0 — GreetingViewModelTest passes"
-  status: failed
-  reason: "2/3 tests fail: loadGreetingTransitionsToReady and loadGreetingOnErrorTransitionsToError both fail with 'No item was found' from Turbine expectMostRecentItem(). viewModelScope.launch() dispatches coroutine asynchronously; test calls expectMostRecentItem() before the coroutine completes. Also blocked by BI-G (iOS compilation failure in allTests dependency chain)."
-  severity: major
+  status: closed
+  closed_by: "01-17 (commit ae7d20c — Dispatchers.setMain + advanceUntilIdle)"
   defect_id: BI-H
-  artifacts: ["shared-app/src/commonTest/kotlin/dev/viethung/showcase/greeting/GreetingViewModelTest.kt"]
-  recommendation: "Add advanceUntilIdle() after loadGreeting() call, or switch from expectMostRecentItem() to awaitItem() with proper coroutine advancement."
 
 - truth: "SKIE Swift interop generation works with Kotlin 2.3.21"
   status: failed
   reason: "SKIE 0.10.11 supports Kotlin up to 2.3.20. Project uses 2.3.21. skie { isEnabled = false } applied in shared-components/build.gradle.kts as upstream workaround to unblock Android builds. iOS XCFramework (SkeletonKit) will not contain SKIE-generated Swift interfaces."
   severity: major
   defect_id: BI-I
+  disposition: deferred-upstream-blocker
+  tracking: "gh api repos/touchlab/SKIE/releases --jq '.[0:3] | .[] | \"\\(.tag_name) - \\(.published_at[:10])\"'"
   artifacts: ["shared-components/build.gradle.kts"]
-  recommendation: "Upgrade SKIE to a version that supports Kotlin 2.3.21 (requires libs.versions.toml change), or downgrade Kotlin to 2.3.20. Check https://github.com/touchlab/SKIE/releases for Kotlin 2.3.21 support."
+  recommendation: "Upgrade SKIE to a version that supports Kotlin 2.3.21 (requires libs.versions.toml change). Check https://github.com/touchlab/SKIE/releases."
+  blocks: [1, 2, 3, 4, 5, 6, 7]
+
+- truth: "iOS framework linking succeeds for shared-app and shared-components"
+  status: failed
+  reason: "shared-app/build.gradle.kts and shared-components/build.gradle.kts iOS framework declarations missing linkerOpts.add('-lsqlite3'). shared-core correctly has it but umbrella frameworks in shared-app and shared-components do not inherit it. Errors: 'ld: Undefined symbols: _sqlite3_bind_blob, ...' during linkDebugFrameworkIosArm64 and linkReleaseFrameworkIosArm64."
+  severity: major
+  defect_id: BI-J
+  artifacts: ["shared-app/build.gradle.kts", "shared-components/build.gradle.kts"]
+  recommendation: "Add linkerOpts.add('-lsqlite3') to iosTarget.binaries.framework {} block in both shared-app/build.gradle.kts and shared-components/build.gradle.kts. Assign to follow-up plan."
   blocks: [1, 2, 3, 4, 5, 6, 7]
 ```
