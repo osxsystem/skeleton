@@ -41,7 +41,7 @@ Plans:
 - [x] 01-05-PLAN.md — SKIE generics validation pattern + SkieGenericsTest (SCAF-02, SCAF-11)
 - [x] 01-06-PLAN.md — :androidApp Koin boot + GreetingScreen (SCAF-01, SCAF-06)
 - [x] 01-07-PLAN.md — :server Ktor module shell with /health route (SCAF-07)
-- [ ] 01-08-PLAN.md — iOS Xcode project + IosViewModelStoreOwner + GreetingScreen (SCAF-02, SCAF-05, SCAF-06)
+- [x] 01-08-PLAN.md — iOS Xcode project + IosViewModelStoreOwner + GreetingScreen (SCAF-02, SCAF-05, SCAF-06)
 - [ ] 01-09-PLAN.md — GitHub Actions CI: Android + iOS jobs with all validation gates (SCAF-09, SCAF-10, SCAF-11)
 - [ ] 01-10-PLAN.md — architecture.md + docs/ARCHITECTURE.md multi-module reconciliation (SCAF-01, SCAF-02, SCAF-03)
 
