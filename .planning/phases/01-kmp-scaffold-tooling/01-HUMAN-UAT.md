@@ -58,6 +58,27 @@ Source commits (on `develop`): `d99e084`, `ac107bd`, `8de2a24`, `49f3671`, `4b05
 
 **Current state:** A through H closed (build-infra fully resolved for Android). I open as upstream blocker (SKIE/Kotlin compatibility). J open as iOS framework linker defect. Android smoke (`./gradlew :androidApp:assembleDebug`) PASSES. iOS Tests 1–7 remain blocked on BI-I and BI-J. 01-14 Android smoke checkpoint is unblocked; iOS UAT awaits BI-I and BI-J resolution.
 
+### Smoke command notes (01-14)
+
+- **Android-only smoke (PASSES):** `./gradlew :androidApp:assembleDebug --no-daemon` exits 0; APK at `androidApp/build/outputs/apk/debug/androidApp-debug.apk`. This is the meaningful Android-side gate.
+- **Full multi-target smoke (FAILS on iOS link):** `./gradlew :shared-core:build :shared-components:build :shared-app:build :androidApp:assembleDebug` fails on `:shared-*:linkDebugFrameworkIos*` due to BI-J. The Android-side compilation paths inside that command all pass; only the iOS link sub-tasks fail. Use `:androidApp:assembleDebug` (Android-only) as the gate until BI-J is closed.
+
+## iOS Pre-Flight Checklist (Before Starting HUMAN-UAT Tests 1–7)
+
+iOS UAT cannot start yet — both BI-I (SKIE upstream) and BI-J (iOS framework -lsqlite3 missing) block Test 1 (`./gradlew :shared-components:assembleSkeletonKitReleaseXCFramework`). Before running the 7 iOS tests on Mac + Xcode 16, confirm:
+
+- [ ] **BI-I closed:** SKIE > 0.10.11 with Kotlin 2.3.21 support exists and `gradle/libs.versions.toml` is bumped; `skie { isEnabled = false }` removed from `shared-components/build.gradle.kts`. Re-check command:
+  ```bash
+  gh api repos/touchlab/SKIE/releases --jq '.[0:3] | .[] | "\(.tag_name) - \(.published_at[:10])"'
+  ```
+- [ ] **BI-J closed:** `linkerOpts.add("-lsqlite3")` added to the `iosTarget.binaries.framework {}` block in BOTH `shared-app/build.gradle.kts` AND `shared-components/build.gradle.kts`.
+- [ ] **Plans 01-11, 01-12, 01-13, 01-15, 01-16, 01-17 are all complete** (check SUMMARY files).
+- [ ] **Android smoke confirmed green** (`./gradlew :androidApp:assembleDebug` exits 0).
+- [ ] **XCFramework rebuilt after BI-I/J fix:** `./gradlew :shared-components:assembleSKIEDebugXCFramework`.
+- [ ] **IN-03 — SKIE symbol name check:** in the generated `SkeletonKit.framework/Headers`, verify the Swift symbol name for `initKoin`. SKIE may generate `doInitKoin` or `initKoin`. `iosApp/iosApp/App/AppKoinBridge.swift` currently calls `AppModuleKt.doInitKoin(platformModules:)` — update if the header shows a different name.
+
+When all six checklist items are checked, proceed to Tests 1–7 below.
+
 ## Tests
 
 ### 1. Build the SkeletonKit XCFramework
