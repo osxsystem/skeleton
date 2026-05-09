@@ -6,8 +6,15 @@ plugins {
 }
 
 kotlin {
-    // Android target
-    androidTarget()
+    android {
+        namespace = "dev.viethung.core"
+        compileSdk = 36
+        minSdk = 23
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
+        }
+        withHostTestBuilder { }
+    }
 
     // iOS targets — iosArm64 + iosSimulatorArm64 ONLY (D-01)
     listOf(
@@ -59,18 +66,6 @@ kotlin {
             implementation(libs.turbine)
             implementation(libs.kotest.assertions.core)
         }
-    }
-}
-
-android {
-    namespace = "dev.viethung.core"           // D-03, D-04
-    compileSdk = 36
-    defaultConfig {
-        minSdk = 23
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
     }
 }
 
