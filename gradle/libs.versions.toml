@@ -1,7 +1,7 @@
 [versions]
 # Update these four together — see SKIE compatibility matrix before bumping any one of them
 kotlin                  = "2.3.21"
-ksp                     = "2.3.21-2.0.4"
+ksp                     = "2.3.7"
 agp                     = "9.2.0"
 skie                    = "0.10.11"
 
