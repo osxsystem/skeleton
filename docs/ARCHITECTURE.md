@@ -99,6 +99,12 @@ skeleton/
 └─ architecture.md                    # Original ADR (hand-written)
 ```
 
+> **Multi-module update (Phase 1):**
+> The `shared/` single-module layout above is the original design sketch.
+> Phase 1 implemented the three-module split mandated by **SCAF-01** (see `.planning/REQUIREMENTS.md`):
+> `:shared-core`, `:shared-components`, `:shared-app`.
+> All architectural principles (MVVM, StateFlow, UDF, IosViewModelStoreOwner) remain unchanged.
+
 - `shared/` — Everything that must not be duplicated lives here. Platform-specific code enters only through `expect`/`actual` declarations.
 - `androidApp/` — Compose entrypoint, theme adapter, and navigation. Contains no business logic.
 - `iosApp/` — SwiftUI entrypoint, theme adapter, and `NavigationStack` wiring. Contains no business logic.
