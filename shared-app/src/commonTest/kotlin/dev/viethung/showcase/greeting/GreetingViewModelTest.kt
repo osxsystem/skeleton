@@ -1,13 +1,32 @@
 package dev.viethung.showcase.greeting
 
 import app.cash.turbine.test
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test                   // kotlin.test.Test — NEVER org.junit.Test (D-17 / Pitfall 18)
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class GreetingViewModelTest {
+
+    @BeforeTest
+    fun setMainDispatcher() {
+        Dispatchers.setMain(StandardTestDispatcher())
+    }
+
+    @AfterTest
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     private fun makeViewModel(message: String = "Hello, KMP"): GreetingViewModel {
         val repo = object : GreetingRepository {
@@ -38,6 +57,7 @@ class GreetingViewModelTest {
         vm.state.test {
             assertIs<GreetingViewModel.UiState.Loading>(awaitItem())  // initial
             vm.loadGreeting()
+            advanceUntilIdle()
             // May emit Loading again, then Ready
             val finalState = expectMostRecentItem()
             assertIs<GreetingViewModel.UiState.Ready>(finalState)
@@ -51,6 +71,7 @@ class GreetingViewModelTest {
         vm.state.test {
             assertIs<GreetingViewModel.UiState.Loading>(awaitItem())
             vm.loadGreeting()
+            advanceUntilIdle()
             val finalState = expectMostRecentItem()
             assertIs<GreetingViewModel.UiState.Error>(finalState)
             assertTrue(finalState.message.isNotBlank())
