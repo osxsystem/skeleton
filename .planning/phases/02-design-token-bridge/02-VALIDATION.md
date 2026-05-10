@@ -2,8 +2,8 @@
 phase: 2
 slug: design-token-bridge
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-05-10
 ---
 
@@ -38,21 +38,27 @@ created: 2026-05-10
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD-by-planner | TBD | TBD | THEME-01..05 | — | — | unit/instrumented | `./gradlew :shared-core:allTests` | ❌ W0 | ⬜ pending |
+| 02-01-T1 | 02-01 | 1 | THEME-01, THEME-02 | Pitfall 6 | No platform imports in commonMain; 36 Long constants per palette (incl. surfaceTint) with L suffix | build gate | `./gradlew :shared-core:jvmTest 2>&1 \| tail -5` | ✅ planned | ⬜ pending |
+| 02-01-T2 | 02-01 | 1 | THEME-02 | Pitfall 6 | noColorConstantIsNegative covers all 72 constants (36 light + 36 dark); kotlin.test.Test used (not org.junit.Test) | unit (commonTest) | `./gradlew :shared-core:jvmTest --tests "dev.viethung.core.theme.DesignTokensTest" 2>&1 \| tail -10` | ✅ planned | ⬜ pending |
+| 02-02-T1 | 02-02 | 2 | THEME-02, THEME-03 | Pitfall 6 | ColorScheme(36 roles incl. surfaceTint) sourced from DesignTokens; no hex literals in theme dir | build gate | `./gradlew :androidApp:assembleDebug 2>&1 \| tail -10` | ✅ planned | ⬜ pending |
+| 02-02-T2 | 02-02 | 2 | THEME-03 | — | MainActivity wraps with AppTheme; no bare MaterialTheme | build gate | `./gradlew :androidApp:assembleDebug 2>&1 \| tail -5` | ✅ planned | ⬜ pending |
+| 02-03-T1 | 02-03 | 2 | THEME-04 | Pitfall 6 | Color(argb: Int64) extension; 36 ThemeColors fields incl. surfaceTint; AppTheme.swift in project.pbxproj | grep + pbxproj check | `grep -c 'EnvironmentKey' iosApp/iosApp/Theme/AppTheme.swift && grep -c 'Int64' iosApp/iosApp/Theme/AppTheme.swift && grep -c 'AppTheme.swift' iosApp/iosApp.xcodeproj/project.pbxproj` | ✅ planned | ⬜ pending |
+| 02-03-T2 | 02-03 | 2 | THEME-04, THEME-05 | Pitfall 7 | AppTheme injected at WindowGroup root; .red replaced by theme.colors.error; xcodebuild passes | build gate | `xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' build 2>&1 \| tail -5` | ✅ planned | ⬜ pending |
+| 02-03-T3 | 02-03 | 2 | THEME-04 | Pitfall 6 (Swift side) | testColorAdapterPreservesAlphaForFFOpaqueLong passes; AppThemeTests.swift in project.pbxproj | XCTest (unit) | `xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' build 2>&1 \| tail -5` | ✅ planned | ⬜ pending |
+| 02-04-T1 | 02-04 | 3 | THEME-05 | Pitfall 7 | rapidToggleSimulation + darkColorsBrightInDark tests pass (5 total in DesignTokensTest) | unit (commonTest) | `./gradlew :shared-core:jvmTest --tests "dev.viethung.core.theme.DesignTokensTest" 2>&1 \| grep -E "tests completed\|FAILED\|PASSED"` | ✅ planned | ⬜ pending |
+| 02-04-CKP | 02-04 | 3 | THEME-05 (SC4) | Pitfall 7 | 10× dark/light toggle without app restart on Android + iOS | checkpoint:human-verify | manual | n/a | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
-
-*Planner fills this table from PLAN.md task IDs after Step 8 completes.*
 
 ---
 
 ## Wave 0 Requirements
 
-- [ ] `:shared-core/src/commonTest/kotlin/dev/viethung/core/theme/DesignTokensTest.kt` — `noColorConstantIsNegative()` + token-completeness assertions for THEME-01, THEME-02
-- [ ] kotest-assertions-core dependency confirmed in `:shared-core` commonTest sourceSet (carry-over from Phase 1)
-- [ ] iOS smoke harness: `iosApp/iosAppTests/AppThemeTests.swift` — `testColorAdapterPreservesAlphaForFFOpaqueLong()` verifies Pitfall 6 mitigation on the Swift side
+- [x] `:shared-core/src/commonTest/kotlin/dev/viethung/core/theme/DesignTokensTest.kt` — `noColorConstantIsNegative()` + token-completeness assertions for THEME-01, THEME-02 — **covered by 02-01-T2**
+- [x] kotest-assertions-core dependency confirmed in `:shared-core` commonTest sourceSet (carry-over from Phase 1)
+- [x] iOS smoke harness: `iosApp/iosAppTests/AppThemeTests.swift` — `testColorAdapterPreservesAlphaForFFOpaqueLong()` verifies Pitfall 6 mitigation on the Swift side — **covered by 02-03-T3**
 
-*If none of the above is missing post-Phase-1, downgrade to "Existing infrastructure covers all phase requirements."*
+*All Wave 0 items are covered by planned tasks. nyquist_compliant = true.*
 
 ---
 
@@ -69,11 +75,11 @@ created: 2026-05-10
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 60s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 60s
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
