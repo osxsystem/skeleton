@@ -58,8 +58,12 @@ Plans:
   2. The Android showcase app renders with MaterialTheme colors, typography, and shapes sourced entirely from DesignTokens — no hex literals in androidApp theme code
   3. The iOS showcase app renders with SwiftUI Color and Font values sourced entirely from DesignTokens — no hex literals in iosApp theme code
   4. Switching macOS/iOS system appearance from Light to Dark updates both apps without restart; the correct palette (LightColors vs DarkColors) is selected by the SwiftUI @Environment(\.colorScheme), not a Kotlin ViewModel flag
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 4 plans
+Plans:
+- [ ] 02-01-PLAN.md — DesignTokens.kt (LightColors, DarkColors, typography, spacing, radius) + DesignTokensTest.kt (THEME-01, THEME-02)
+- [ ] 02-02-PLAN.md — Compose AppTheme adapter + MainActivity.kt update (THEME-02, THEME-03)
+- [ ] 02-03-PLAN.md — SwiftUI AppTheme adapter + iosApp.swift + GreetingScreen.swift update (THEME-04, THEME-05)
+- [ ] 02-04-PLAN.md — Dark mode verification tests + manual smoke sign-off (THEME-05)
 
 **Pitfall refs**: Pitfall 6 (ARGB Long overflow), Pitfall 7 (dark mode token selection on wrong side of bridge)
 
@@ -164,7 +168,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. KMP Scaffold + Tooling | 0/10 | In Progress | - |
-| 2. Design Token Bridge | 0/TBD | Not started | - |
+| 2. Design Token Bridge | 0/4 | Not started | - |
 | 3. Forms + Amount Input + In-App Notifications | 0/TBD | Not started | - |
 | 4. Push Notifications | 0/TBD | Not started | - |
 | 5. Navigation Drawer | 0/TBD | Not started | - |
