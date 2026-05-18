@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Draft — Decisions pending (see §14) |
+| **Status** | Draft — §14 decisions resolved; ready for implementation |
 | **Owner** | _unassigned_ |
 | **Companion plan** | [`LOGIN-IMPLEMENTATION-PLAN.md`](./LOGIN-IMPLEMENTATION-PLAN.md) |
 | **Phase** | Foundational feature (precedes Dashboard, Profile, Settings) |
@@ -16,7 +16,7 @@
 1. **The skeleton has zero authentication.** A grep across `shared-core`, `shared-components`, `androidApp`, `iosApp` returns no `auth`/`login`/`session` references — every future feature that needs a signed-in user is currently blocked.
 2. **No reference pattern exists for a multi-state ViewModel.** The only shared VM today is `GreetingViewModel` (`shared-app/.../greeting/GreetingViewModel.kt:14`), which has a 3-state `UiState` (`Loading | Ready | Error`) and no user input. Login introduces input fields, validation, an in-flight network state, and a one-shot navigation signal — a more complex state machine the codebase has not yet had to support.
 3. **The skeleton has no expect/actual secure-storage layer.** Tokens cannot be persisted today — the only `expect`/`actual` is `DatabaseDriverFactory` (SQLDelight). Without a `SessionStore`, the success of `LoginUseCase` would be discarded on app restart, defeating the point of authenticating.
-4. **iOS bindings are partially blocked.** `shared-components/build.gradle.kts:60-65` has `skie { isEnabled = false }` because SKIE 0.10.11 does not yet support Kotlin 2.3.21. The current `GreetingScreen.swift:14` uses SKIE-only syntax (`switch onEnum(of:)`, `for await s in vm.state`) — meaning either iOS does not compile today, or there is a workaround not yet captured in code. Login cannot ship to iOS until this is resolved.
+4. **iOS bindings work via a SKIE-less helper pattern.** `shared-components/build.gradle.kts:66-71` has `skie { isEnabled = false }` because SKIE 0.10.11 does not yet support Kotlin 2.3.21. The skeleton already ships a SKIE-less iOS bridge (commit `d61d3f2`): per-VM Kotlin helpers wrap `ViewModelProvider.create(...)` and `StateFlow.collect(...)` for Swift. See `GreetingViewModelHelper.kt` (`createGreetingViewModel(store:)`, `subscribeGreetingState(vm:, onState:)`) and `GreetingScreen.swift:5-30`. iOS builds today. Login mirrors this pattern (§11.3).
 
 ---
 
@@ -49,8 +49,8 @@
 - Mock `AuthApi` (`FakeAuthApi` with `delay(800)`) returning success for one hardcoded credential and failure otherwise.
 - `AuthRepository`, `LoginUseCase`, `LoginViewModel`, `LoginUiState` (sealed interface, 4 branches).
 - `SessionStore` `expect`/`actual` for Android (EncryptedSharedPreferences) and iOS (Keychain).
-- Koin wiring (data/domain in `:shared-core`, VM in module per §14.A decision).
-- Navigation hook: signal `Succeeded` → caller-supplied callback navigates to Dashboard (or a placeholder until §14.C is resolved).
+- Koin wiring: data/domain in `:shared-core`; VM in `:shared-app`.
+- Navigation hook: signal `Succeeded` → caller-supplied callback. Root composable / `NavigationStack` swaps `LoginScreen` for `DashboardPlaceholder` via a hoisted `isAuthenticated` flag (§14.C).
 - Unit tests covering state-machine transitions (success, failure, dismissal, empty inputs).
 - Sample test credential `test@example.com` / `password` documented for QA.
 
@@ -114,7 +114,7 @@
 | **NFR-05** | Security | Ktor logging | `LogLevel.HEADERS` only — no body logging (already enforced in `KtorClient.kt:18`, T-02-01) |
 | **NFR-06** | Accessibility | Form labels and error alerts | Read aloud by TalkBack (Android) and VoiceOver (iOS); error alert receives focus on appearance |
 | **NFR-07** | Testability | `LoginViewModel` unit-testability | No `android.*` / `UIKit.*` imports; constructable with a fake `LoginUseCase` in `commonTest` |
-| **NFR-08** | Maintainability | Design tokens vs raw values | See §14.B — if D-03 ships before this feature, MUST use tokens; otherwise use `MaterialTheme.*` and `Color(.sRGB...)` directly with refactor planned |
+| **NFR-08** | Maintainability | Design tokens vs raw values | MUST use `DesignTokens.*` for spacing (Android `.dp`, iOS via `\.appTheme`) and `MaterialTheme.typography/colorScheme` (Android) / SwiftUI `Color`/`Font` semantic equivalents (iOS) for type and color. Mirrors `GreetingScreen.kt` precedent. |
 
 ---
 
@@ -146,7 +146,7 @@ expect class SessionStore {
 ```
 
 ```kotlin
-// :<module per §14.A>/.../auth/login/LoginUiState.kt
+// :shared-app/.../auth/login/LoginUiState.kt
 sealed interface LoginUiState {
     data class Editing(
         val email: String = "",
@@ -212,17 +212,17 @@ sealed interface LoginUiState {
                       KtorAuthApi (Phase 2, out of scope here)
 ```
 
-### 9.2 Module placement (subject to §14.A decision)
+### 9.2 Module placement
 
-| Component | Module if "follow plan" | Module if "match Greeting" |
-|---|---|---|
-| `AuthApi`, `UserSession`, `AuthException` | `:shared-core/data/remote/auth/` | `:shared-core/data/remote/auth/` |
-| `SessionStore` expect + actuals | `:shared-core/data/auth/` (+ androidMain / iosMain) | same |
-| `AuthRepository` | `:shared-core/data/auth/` | same |
-| `LoginUseCase` | `:shared-core/domain/auth/` | same |
-| `LoginViewModel` + `LoginUiState` + Factory | **`:shared-components/auth/login/`** | **`:shared-app/auth/login/`** |
-| Koin data/domain bindings | `:shared-core/di/AuthModule.kt` | same |
-| Koin VM binding | `:shared-components` `componentsModule` (currently empty placeholder) | `:shared-app` `appModule` |
+| Component | Module + path |
+|---|---|
+| `AuthApi`, `UserSession`, `AuthException` | `:shared-core/data/remote/auth/` |
+| `SessionStore` expect + actuals | `:shared-core/data/auth/` (+ androidMain / iosMain) |
+| `AuthRepository` | `:shared-core/data/auth/` |
+| `LoginUseCase` | `:shared-core/domain/auth/` |
+| `LoginViewModel` + `LoginUiState` + Factory + Helper | `:shared-app/auth/login/` |
+| Koin data/domain bindings | `:shared-core/di/AuthModule.kt` |
+| Koin VM binding | `:shared-app` `authVmModule` (Plan §9) |
 
 ### 9.3 iOS lifecycle pattern (`IosViewModelStoreOwner`)
 
@@ -285,9 +285,18 @@ fun LoginScreen(onSuccess: () -> Unit, viewModel: LoginViewModel = koinViewModel
 }
 ```
 
-### 11.3 SwiftUI binding (iOS) — **blocked by §14.D**
-- **If SKIE is re-enabled:** `switch onEnum(of: uiState)` + `for await s in vm.state` (matches `GreetingScreen.swift:14`).
-- **If SKIE stays disabled:** must wrap `StateFlow` in a custom `FlowCollector` (publish to `@Published` via `Combine`); enum branching uses `is`/`as?` casts. This **doubles** iOS scope.
+### 11.3 SwiftUI binding (iOS) — follow the SKIE-less helper pattern
+
+Login adds `LoginViewModelHelper.kt` (in the same module as `LoginViewModel`) mirroring `GreetingViewModelHelper.kt`:
+- `fun createLoginViewModel(store: ViewModelStore): LoginViewModel` — hides `KClass` from the K/N Obj-C bridge.
+- `fun subscribeLoginState(vm: LoginViewModel, onState: (LoginUiState) -> Unit): Job` — replaces `for await s in vm.state`.
+
+Swift consumes them in `LoginScreen.swift`:
+- `LoginViewModelHelperKt.createLoginViewModel(store: owner.viewModelStore)`
+- `LoginViewModelHelperKt.subscribeLoginState(vm: vm) { state in uiState = state }` — store the returned `Kotlinx_coroutines_coreJob?` and cancel in `.onDisappear`.
+- State branching uses `as?` casts: `if let editing = uiState as? LoginUiState.Editing { ... }`.
+
+No Combine, no `@Published` bridge. Reference: `GreetingScreen.swift:5-30`. Re-enabling SKIE later is additive — `for await` / `onEnum` become alternatives, not replacements.
 
 ---
 
@@ -326,48 +335,33 @@ fun LoginScreen(onSuccess: () -> Unit, viewModel: LoginViewModel = koinViewModel
 
 These must be resolved **before implementation starts**. Each is presented as a binary choice with the leaning highlighted.
 
-### 14.A — Module placement for `LoginViewModel`
+### 14.A — Module placement for `LoginViewModel` (resolved as A2)
 
-| Option | Pro | Con |
-|---|---|---|
-| **A1.** Follow plan: VM in `:shared-components` | Matches plan §3 verbatim; gives `:shared-components` its first real occupant. | Login is feature-y, not a reusable widget (Form, AmountInput, Notification — see `ComponentsModule.kt:10` comments). Sets precedent that may need reversing in Phase 3+. |
-| **A2.** Match Greeting: VM in `:shared-app` | Consistent with existing `GreetingViewModel`; `:shared-components` stays clean for actual reusable components. | Diverges from the plan; PRD has to override §3. |
+`LoginViewModel` lives in `:shared-app`, mirroring `GreetingViewModel`. Rationale:
 
-**Recommendation:** A2 unless we already plan to migrate `GreetingViewModel` to `:shared-components` in the same sprint.
+- **`:shared-components` is a published Maven artifact** (`shared-components/build.gradle.kts:83-107`) reserved for the four named reusable widgets — forms, amount input, sidebar navigation, notifications. Auth is not one of them; shipping it there would force every downstream consumer to inherit product-specific auth types.
+- **Login is product-specific**, not a domain-agnostic widget. Different products cloned from this skeleton will diverge on auth (SSO, magic link, MFA, biometrics).
+- **`:shared-app` is the showcase module** (CLAUDE.md §3 — "showcase wiring; never published") where pattern demonstrations live. `GreetingViewModel` is already there.
 
-### 14.B — DesignTokens availability
+Plan §3 has been updated to match.
 
-`shared-core/.../theme/DesignTokens.kt` does not exist yet (D-03 phase 2 plans visible in `git log`). Plan §14 DoD #7 requires "no raw colors / fonts / sizes."
+### 14.B — Design tokens (resolved)
 
-| Option | Detail |
-|---|---|
-| **B1.** Block Login until D-03 ships | Clean but delays Login by however long D-03 takes. |
-| **B2.** Use `MaterialTheme.*` + system colors directly | Matches `GreetingScreen.kt:35-40` precedent. Adds tech debt: a `// TODO(D-03): replace with token` comment per call site. Refactor after tokens land. |
+`shared-core/src/commonMain/kotlin/dev/viethung/core/theme/DesignTokens.kt` shipped in commit `ff2e505` (Phase 2 Wave 1). The Android Greeting reference is hybrid: `DesignTokens.*.dp` for spacing, `MaterialTheme.typography.*` and `MaterialTheme.colorScheme.*` for type and semantic colors (`GreetingScreen.kt:19, :44, :49, :52`). The iOS adapter exposes tokens via the `\.appTheme` environment value (`GreetingScreen.swift:8, :15, :40`).
 
-**Recommendation:** B2 — consistent with current `GreetingScreen` and unblocks. PRD adds NFR-08 to track the refactor.
+**Decision: Login MUST use `DesignTokens.*` for spacing and `MaterialTheme` / SwiftUI semantic equivalents for type and color.** No `// TODO(D-03)` comments needed.
 
-### 14.C — Navigation strategy for Phase 1
+### 14.C — Navigation (resolved as C2)
 
-`MainActivity.kt:17` has no `NavHost` (comment: "deferred to Phase 5"). `ContentView.swift:5` wraps a single screen.
+`MainActivity.kt` has no `NavHost`. `ContentView.swift:7` already wraps a single screen in `NavigationStack { GreetingScreen(...) }`. A full nav graph is out of scope for Phase 1.
 
-| Option | Detail |
-|---|---|
-| **C1.** Block Login until Phase 5 navigation lands | Plan §12 assumes NavHost + NavigationStack routing. |
-| **C2.** Hoist `isAuthenticated: Boolean` state to root composable / SwiftUI view | Login signals `Succeeded` → root flips flag → root swaps `LoginScreen` for `DashboardPlaceholder`. Refactor to nav graph when Phase 5 arrives. |
+**Decision: hoist `isAuthenticated: Boolean` state to the root composable (Android) and the root `NavigationStack` view (iOS).** Login signals `Succeeded` → root flips the flag → root swaps `LoginScreen` for `DashboardPlaceholder`. Refactor to a proper nav graph when Phase 5 navigation lands. The VM's `onSuccess` callback decouples it from any nav choice.
 
-**Recommendation:** C2 — keeps Phase 1 simple; the VM's `onSuccess` callback decouples it from any nav choice anyway.
+### 14.D — SKIE status (resolved)
 
-### 14.D — SKIE status
+`shared-components/build.gradle.kts:66-71`: `skie { isEnabled = false }` (waiting on Kotlin 2.3.21 support). The skeleton has already adopted a SKIE-less iOS bridge pattern in commit `d61d3f2`: per-VM Kotlin helpers wrap `ViewModelProvider.create(...)` and `StateFlow.collect(...)` for Swift consumption. iOS builds today.
 
-`shared-components/build.gradle.kts:60-65`: `skie { isEnabled = false }` (waiting on Kotlin 2.3.21 support). But `GreetingScreen.swift:14` uses SKIE-only syntax. **Either iOS does not currently build, or there is an undocumented workaround.**
-
-| Option | Detail |
-|---|---|
-| **D1.** Re-enable SKIE before Login lands | Requires SKIE release supporting 2.3.21 OR downgrading Kotlin. Out of feature scope. |
-| **D2.** Write SKIE-free iOS bridge | Replace `for await s in vm.state` with a `FlowWrapper` exposed as a `@Published` via Combine; replace `switch onEnum(of:)` with `is`/`as?` casts. Roughly **2× the iOS code volume**. |
-| **D3.** Defer iOS shipping; ship Android first | PRD documents Phase-by-Phase release: Android in Sprint 1, iOS when SKIE unblocks. |
-
-**Recommendation:** This decision must be made by the project owner. If unsure, choose D3 to preserve the architectural integrity and avoid `:iosApp` build instability.
+**Decision: Login follows the SKIE-less helper pattern (§11.3) — same as `GreetingViewModelHelper.kt`.** No Combine wrapper required; iOS code volume is comparable to the SKIE version, not doubled. Re-enabling SKIE later is additive and requires no rewrite of this code.
 
 ---
 
@@ -375,13 +369,13 @@ These must be resolved **before implementation starts**. Each is presented as a 
 
 | ID | Risk | Likelihood | Impact | Mitigation |
 |---|---|---|---|---|
-| **R-01** | SKIE remains disabled and iOS cannot consume `LoginViewModel` without significant additional bridge code. | High | High | Resolve §14.D before starting iOS work. PRD will not block on this for Android scope. |
+| **R-01** | Engineer drifts from the SKIE-less helper pattern (e.g., wraps `StateFlow` in Combine, accesses `vm.state` from Swift directly) — iOS code won't compile, or breaks when SKIE is later re-enabled. | Low | Medium | Code review: verify `LoginViewModelHelper.kt` exists with `createLoginViewModel(store:)` + `subscribeLoginState(vm:, onState:)`; verify `LoginScreen.swift` uses `as?` casts and the helper job pattern. Reference: `GreetingViewModelHelper.kt` + `GreetingScreen.swift:5-30`. |
 | **R-02** | Token leaks to logs via `Throwable.toString()` or stack traces (especially `AuthException` carrying error context). | Medium | High | FR-10 + AC-11 grep gate. Code review checklist item. `AuthException` constructor must not accept the password as a parameter. |
 | **R-03** | `EncryptedSharedPreferences` is in `1.1.0-alpha06` as of writing — alpha status. API may change. | Medium | Medium | Pin the version; abstract behind `SessionStore` so swap-out is one-file. Track alpha → stable promotion. |
 | **R-04** | iOS Keychain access fails when device is locked at first launch (`kSecAttrAccessibleWhenUnlocked`). | Low | Medium | Use `kSecAttrAccessibleAfterFirstUnlock` (NFR-04). Document the trade-off. |
 | **R-05** | Mock `delay(800)` masks real-world timeout behavior; first `KtorAuthApi` integration will surface new failure modes. | High | Low | Design FR-05 to handle generic exceptions today (timeouts, JSON parse) so the Phase 2 swap is a no-op in `LoginViewModel`. |
 | **R-06** | Junior engineer following the plan introduces `koinViewModel<LoginViewModel>()` directly on iOS via SwiftUI — bypassing `IosViewModelStoreOwner` — and breaks the lifecycle contract. | Medium | High | Document in plan §11 (already present) + code review must check `@StateObject` + `IosViewModelStoreOwner`. |
-| **R-07** | `componentsModule` (`shared-components/.../ComponentsModule.kt:10`) is currently empty. Adding Login first means setting the wiring style that future components follow. If §14.A picks A1, the first wiring must be exemplary. | Low | Medium | Add `factory { LoginViewModel(get()) }` with a comment cross-referencing the plan, mirroring `appModule` style. |
+| **R-07** | Plan §3 originally placed `LoginViewModel` in `:shared-components`; engineer reads the plan first and wires the VM into the wrong (published) module. | Low | Medium | Plan §3 has been updated to `:shared-app` (PRD §14.A resolution). Code review: verify Koin binding lives in `appModule` / `authVmModule`, not `componentsModule`. |
 
 ---
 
@@ -396,9 +390,9 @@ Sequential, per plan §4. Each phase produces a verifiable artifact:
 | 3 | Repository + UseCase | `AuthRepository.kt`, `LoginUseCase.kt` | Unit tests (happy path, blank inputs) |
 | 4 | `SessionStore` expect/actual | `commonMain` expect + Android + iOS actuals | Round-trip test on each platform |
 | 5 | `LoginViewModel` + Factory | `LoginViewModel.kt`, `LoginViewModelFactory.kt` | `commonTest` with Turbine — 4 branches |
-| 6 | Koin wiring | `AuthModule.kt` (+ update `componentsModule` per §14.A) | `startKoin {}` succeeds in both apps |
+| 6 | Koin wiring | `AuthModule.kt` (data/domain, `:shared-core`) + `authVmModule` (VM, `:shared-app`) | `startKoin {}` succeeds in both apps |
 | 7 | Android Compose UI | `LoginScreen.kt` | `:androidApp:installDebug`, manual smoke |
-| 8 | iOS SwiftUI UI | `LoginScreen.swift` (blocked on §14.D) | `⌘R` in Xcode, manual smoke |
+| 8 | iOS SwiftUI UI + helper | `LoginScreen.swift` + `LoginViewModelHelper.kt` (mirrors Greeting pattern, §11.3) | `⌘R` in Xcode, manual smoke |
 | 9 | Navigation hook-up | Root-level `isAuthenticated` flag flips on success | Manual end-to-end smoke |
 
 ---
@@ -433,7 +427,7 @@ Sequential, per plan §4. Each phase produces a verifiable artifact:
 - `iosApp/iosApp/Common/IosViewModelStoreOwner.swift:14` — iOS lifecycle host (D-12 / Pitfall 1+2)
 - `shared-core/.../network/KtorClient.kt:10` — HTTP client config (T-02-01 no body logging)
 - `gradle/libs.versions.toml` — version catalog (single source per CLAUDE.md §2)
-- SKIE compatibility matrix — gating §14.D resolution
+- `shared-app/.../greeting/GreetingViewModelHelper.kt` — reference SKIE-less iOS bridge (commit `d61d3f2`)
 
 ---
 

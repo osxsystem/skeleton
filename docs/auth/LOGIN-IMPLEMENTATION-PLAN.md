@@ -13,7 +13,7 @@
 - **UI Specs:** _pending_ (`LOGIN-UI.md`)
 - **QA Test Plan:** _pending_ (`LOGIN-QA.md`)
 
-⛔ **The PRD's §14 "Open Decisions Needed" must be resolved before this plan is executed.** It overrides §3 of this document for module placement (decision A) and adds clarifications for design tokens (B), navigation (C), and SKIE status (D).
+**Status:** PRD §14 decisions are resolved. This plan has been updated to match — §3 places `LoginViewModel` in `:shared-app` (A2); design tokens (B), navigation (C), and SKIE bridge (D) all reference the PRD's resolved guidance.
 
 ---
 
@@ -65,12 +65,12 @@ This skeleton has multiple modules. Putting things in the wrong module is the mo
 | `AuthApi` (Ktor client interface + mock) | `:shared-core` | `data/remote/auth/` |
 | `AuthRepository` | `:shared-core` | `data/auth/` |
 | `LoginUseCase` | `:shared-core` | `domain/auth/` |
-| `LoginViewModel`, `LoginUiState`, events | `:shared-components` | `auth/login/` |
-| Koin bindings for the above | `:shared-core` (data/domain) + `:shared-components` (VM) | `di/` |
+| `LoginViewModel`, `LoginUiState`, events, helper | `:shared-app` | `auth/login/` |
+| Koin bindings for the above | `:shared-core` (data/domain) + `:shared-app` (VM) | `di/` |
 | Compose `LoginScreen` | `:androidApp` | `auth/LoginScreen.kt` |
 | SwiftUI `LoginScreen` | `:iosApp` | `Auth/LoginScreen.swift` |
 
-**Why split data/domain into `:shared-core`?** Because authentication is foundational — every future feature (Dashboard, Profile, Settings) needs to know who the user is. Foundational things go in `:shared-core`. Reusable feature components go in `:shared-components`.
+**Why this split?** Authentication's data and domain layers live in `:shared-core` because every future feature (Dashboard, Profile, Settings) needs to know who the user is — foundational things go there. The `LoginViewModel` lives in `:shared-app` (the "showcase" module), not `:shared-components`, because Login is a product feature, not a reusable widget. `:shared-components` is reserved for the four genuinely-reusable component VMs the skeleton promises: forms, amount input, sidebar navigation, notifications.
 
 ---
 
@@ -100,7 +100,7 @@ Don't skip ahead. The ViewModel must be tested green **before** you touch any UI
 Use a `sealed interface` so the view can `when (state)` exhaustively (the compiler will yell if you miss a case):
 
 ```kotlin
-// :shared-components/.../auth/login/LoginUiState.kt
+// :shared-app/.../auth/login/LoginUiState.kt
 sealed interface LoginUiState {
 
     /** Form is editable; user can type and submit. */
@@ -219,7 +219,7 @@ class LoginUseCase(private val repository: AuthRepository) {
 This is where the four-step lifecycle lives: **idle → submitting → success/failure**.
 
 ```kotlin
-// :shared-components/.../auth/login/LoginViewModel.kt
+// :shared-app/.../auth/login/LoginViewModel.kt
 class LoginViewModel(
     private val login: LoginUseCase,
 ) : ViewModel() {
@@ -309,7 +309,7 @@ val authDataModule = module {
 ```
 
 ```kotlin
-// :shared-components/.../di/AuthVmModule.kt
+// :shared-app/.../di/AuthVmModule.kt
 val authVmModule = module {
     factory { LoginViewModel(get()) }
 }
@@ -435,7 +435,7 @@ Navigation is platform-specific and lives in each app module. The shared ViewMod
 Write the test **before** you wire any UI. If the test passes, the brain works.
 
 ```kotlin
-// :shared-components/src/commonTest/.../LoginViewModelTest.kt
+// :shared-app/src/commonTest/.../LoginViewModelTest.kt
 @Test
 fun login_success_emits_Submitting_then_Succeeded() = runTest {
     val vm = LoginViewModel(login = FakeLoginUseCase(success = true))
@@ -469,7 +469,7 @@ fun login_failure_emits_Failed_with_message_and_clears_password() = runTest {
 
 The feature is done when **all** of these are true:
 
-- [ ] `:shared-components:allTests` passes the new `LoginViewModelTest` (success + failure + dismissal).
+- [ ] `:shared-app:allTests` passes the new `LoginViewModelTest` (success + failure + dismissal).
 - [ ] `./gradlew :androidApp:installDebug` runs; the Android login screen completes the full flow end-to-end with `test@example.com` / `password`.
 - [ ] iOS build runs in Xcode (⌘R); SwiftUI login screen completes the full flow end-to-end.
 - [ ] Tapping submit with valid creds shows a spinner for ~800 ms, then navigates to Dashboard.
