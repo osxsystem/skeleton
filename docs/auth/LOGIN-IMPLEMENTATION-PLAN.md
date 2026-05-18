@@ -472,12 +472,14 @@ struct LoginScreen: View {
 
 ---
 
-## 12. Navigation to Dashboard
+## 12. Navigation to Dashboard (Phase 1: hoist `isAuthenticated` at root)
 
-- **Android:** Navigation 3 — the parent `NavHost` listens for the `onSuccess` callback and pops to `Dashboard`.
-- **iOS:** A `NavigationStack` at the app root reacts to a binding flipped by `onSuccess`.
+Phase 1 has no nav graph — `MainActivity.kt` has no `NavHost`, and `ContentView.swift:7` wraps a single `NavigationStack { GreetingScreen(...) }`. Per PRD §14.C, both platforms hoist an `isAuthenticated: Boolean` flag at the root view and swap `LoginScreen` ↔ `DashboardPlaceholder` based on it. The shared ViewModel only signals `Succeeded` via the `onSuccess` callback — it doesn't know what screen comes next.
 
-Navigation is platform-specific and lives in each app module. The shared ViewModel only signals "Succeeded" — it does **not** know what screen comes next.
+- **Android:** `MainActivity` holds `isAuthenticated` in `rememberSaveable`; pass `onSuccess = { isAuthenticated = true }` to `LoginScreen`. The root `Surface` renders `LoginScreen` when false, `DashboardPlaceholder` when true.
+- **iOS:** `ContentView` holds `@State var isAuthenticated: Bool`; pass `onSuccess = { isAuthenticated = true }` to `LoginScreen`. The `NavigationStack` swaps `LoginScreen` ↔ `DashboardPlaceholder` based on the flag.
+
+When Phase 5 navigation lands, both platforms refactor to a proper nav graph; the VM's `onSuccess` callback stays unchanged.
 
 ---
 
