@@ -1,253 +1,174 @@
-<!-- GSD:project-start source:PROJECT.md -->
-## Project
+# CLAUDE.md
 
-**Skeleton**
+Behavioral and architectural guidelines for this **Kotlin Multiplatform skeleton**.
+Shared Kotlin business logic; native UI per platform (Jetpack Compose on Android, SwiftUI on iOS).
 
-A personal Kotlin Multiplatform mobile-app **skeleton template** — shared Kotlin
-business logic, native UI on each platform (Jetpack Compose on Android, SwiftUI
-on iOS). The deliverable is a clonable foundation **plus** a library of reusable
-native UI components (forms, currency-aware amount input, tree sidebar
-navigation, notifications) that any new product cloned from this repo can
-consume from day one. A showcase app on both platforms exercises every
-component end-to-end.
+**Tradeoff:** these rules bias toward caution and architectural integrity over speed. Use judgment for trivial tasks.
 
-**Core Value:** Cloning this skeleton must give a new product, on day one, a correct
-KMP scaffold and the four UI primitives that every mobile product re-implements
-badly: forms, amount input, navigation, and notifications.
+> **Setup and build commands** live in [`README.md`](README.md). **Architecture rationale, references, and the iOS `IosViewModelStoreOwner` contract** live in [`architecture.md`](architecture.md). When in doubt, those documents are authoritative.
 
-### Constraints
+---
 
-- **Tech stack**: Kotlin Multiplatform, Jetpack Compose (Android), SwiftUI (iOS), Ktor, SQLDelight, Koin, SKIE — locked by `architecture.md`. No alternatives entertained for v1.
-- **Lifecycle version**: `androidx.lifecycle 2.10.0` — KMP-capable `ViewModel` artifact.
-- **Design tokens in commonMain** must use only primitives (`Long` for ARGB, `Float`, `Int`) — no Compose or SwiftUI types, since they don't compile on the other side.
-- **State ownership**: shared `ViewModel`s own state; both UIs are pure projections. Views never mutate state.
-- **Form factor**: phones first; tablets get the same drawer larger. Foldables / desktop are not designed for.
-- **Solo + AI-assisted**: planning and execution will run through GSD; phase decomposition should respect that one person (with an agent) is doing the work.
-<!-- GSD:project-end -->
+## 1. Core Principles
 
-<!-- GSD:stack-start source:research/STACK.md -->
-## Technology Stack
+### Think Before Coding
+**Don't assume. Don't pick silently. Surface confusion before writing code.**
 
-## 1. Build Tooling
-### Kotlin
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Kotlin | **2.3.21** | Language + KMP compiler | Current stable; K2 compiler is the default since 2.0; 2.3.x is the active stable line as of May 2026 |
-| KMP Gradle plugin | bundled with Kotlin | Multiplatform source-set wiring | Ships with Kotlin; no separate version to pin |
-| KSP (KSP2) | **2.3.21-2.0.4** (align with Kotlin) | Annotation processing (SQLDelight, Koin annotations if used) | KSP2 is now the default; KSP1 is deprecated and broken on AGP 9+; version prefix must match Kotlin version exactly |
-### Android Build
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Android Gradle Plugin | **9.2.0** | Android module build | Latest stable as of April 2026; introduces native KMP library plugin (`com.android.kotlin.multiplatform.library`); requires JDK 17+, Gradle 9.1+ |
-| Gradle | **9.5.0** | Build system | Latest stable (2026-05-05); AGP 9 minimum is 9.1; configuration cache is now preferred execution mode |
-| JDK | **21** | Gradle daemon + compilation | LTS release; required by AGP 9 minimum JDK 17, but 21 is the LTS target for new projects |
-| compileSdk / targetSdk | **36** | Android API target | AGP 9.2.0 max is API 37; Google Play targets latest SDK; API 36 is stable |
-| minSdk | **23** | Minimum supported Android | `androidx.lifecycle 2.10.0` raised its minimum to API 23 |
-### Xcode / iOS Toolchain
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| Xcode | **16+** (target 16.x) | iOS builds, simulator tests | Apple mandates Xcode 16 / iOS 18 SDK for all App Store submissions since April 24 2025; Xcode 26 is expected to become mandatory in April 2026 — track and upgrade then |
-| Swift | **5.10+** | iOS app code | Ships with Xcode 16; SKIE requires Swift 5.8+; no separate pin needed |
-| iOS deployment target | **17.0** | Minimum supported iOS | Covers ~95%+ of active devices in 2026; `NavigationStack` (Nav 3 replacement on iOS) stable since iOS 16 |
-### Version Catalog (`gradle/libs.versions.toml`)
-## 2. Locked-In Libraries (Verified Versions)
-### androidx.lifecycle (ViewModel)
-| Artifact | Version | Scope |
-|----------|---------|-------|
-| `androidx.lifecycle:lifecycle-viewmodel` | **2.10.0** | `commonMain` (api + export) |
-| `androidx.lifecycle:lifecycle-runtime-compose` | **2.10.0** | `androidMain` |
-| `androidx.lifecycle:lifecycle-viewmodel-compose` | **2.10.0** | `androidMain` |
-### Jetpack Compose (Android)
-| Artifact | Version | Notes |
-|----------|---------|-------|
-| `androidx.compose:compose-bom` | **2026.05.00** | Maps Compose UI 1.11.1, Material3 1.4.0 |
-| `androidx.compose.material3:material3` | via BOM (1.4.0) | Use BOM — do not pin individually |
-| `androidx.compose.ui:ui-test-junit4-android` | via BOM | Instrumented UI tests |
-| `androidx.compose.ui:ui-test-manifest` | via BOM | `debugImplementation` |
-### Ktor Client
-| Artifact | Version | Scope |
-|----------|---------|-------|
-| `io.ktor:ktor-client-core` | **3.4.0** | `commonMain` |
-| `io.ktor:ktor-client-okhttp` | **3.4.0** | `androidMain` |
-| `io.ktor:ktor-client-darwin` | **3.4.0** | `iosMain` |
-| `io.ktor:ktor-client-content-negotiation` | **3.4.0** | `commonMain` |
-| `io.ktor:ktor-serialization-kotlinx-json` | **3.4.0** | `commonMain` |
-| `io.ktor:ktor-client-logging` | **3.4.0** | `commonMain` |
-### SQLDelight
-| Artifact | Version | Scope |
-|----------|---------|-------|
-| `app.cash.sqldelight:gradle-plugin` | **2.3.2** | `buildSrc` / plugins block |
-| `app.cash.sqldelight:android-driver` | **2.3.2** | `androidMain` |
-| `app.cash.sqldelight:native-driver` | **2.3.2** | `iosMain` |
-| `app.cash.sqldelight:coroutines-extensions` | **2.3.2** | `commonMain` |
-### Koin
-| Artifact | Version | Scope |
-|----------|---------|-------|
-| `io.insert-koin:koin-core` | **4.2.1** | `commonMain` |
-| `io.insert-koin:koin-android` | **4.2.1** | `androidApp` |
-| `io.insert-koin:koin-androidx-compose` | **4.2.1** | `androidApp` |
-### SKIE (Swift Kotlin Interface Enhancer)
-| Artifact | Version | Scope |
-|----------|---------|-------|
-| `co.touchlab.skie:gradle-plugin` (Gradle plugin id: `co.touchlab.skie`) | **0.10.11** | `shared/build.gradle.kts` plugins block |
-## 3. Supporting Libraries
-### Kotlinx Libraries
-| Library | Version | Artifact | Purpose |
-|---------|---------|---------|---------|
-| kotlinx-coroutines-core | **1.10.2** | `org.jetbrains.kotlinx:kotlinx-coroutines-core` | Coroutines + StateFlow; 1.11.0-rc02 exists but wait for stable |
-| kotlinx-coroutines-test | **1.10.2** | `org.jetbrains.kotlinx:kotlinx-coroutines-test` | `runTest` for ViewModel unit tests; same version as core |
-| kotlinx-serialization-json | **1.10.0** | `org.jetbrains.kotlinx:kotlinx-serialization-json` | JSON (Ktor payloads, FCM notification payloads); plugin: `kotlin("plugin.serialization")` |
-| kotlinx-datetime | **0.7.1** | `org.jetbrains.kotlinx:kotlinx-datetime` | Date/time in commonMain; `kotlin.time.Instant` is now in stdlib, datetime handles calendars/timezones only |
-### Android-side UI Support
-| Library | Version | Artifact | Purpose |
-|---------|---------|---------|---------|
-| Coil | **3.4.0** | `io.coil-kt.coil3:coil-compose` + `io.coil-kt.coil3:coil-network-ktor3` | Image loading in Compose; Ktor-based network layer reuses the Ktor client already in the project |
-| Jetpack Navigation 3 | **1.1.1** | `androidx.navigation3:navigation3-runtime` + `navigation3-ui` | Type-safe Compose navigation; stable since Nov 2025; KMP targets added (JVM, Native, Web) |
-## 4. Form / State Libraries
-### Approach: no third-party form library
-- Each form field is a `data class` property in `UiState` with a nullable error string.
-- Validation logic lives in a `validate()` function in the `ViewModel` or a use-case class in `domain/`.
-- Submission sets a `isSubmitting: Boolean` flag and dispatches a `Submit` event.
-- For complex multi-step forms, a `FormState<T>` sealed interface (`Idle`, `Validating`, `Error(fields)`, `Submitting`, `Success`) covers the lifecycle without an external library.
-## 5. Currency / Locale Formatting
-### Approach: `expect`/`actual` over the platform number formatter
-## 6. Push Notifications
-### Android — Firebase Cloud Messaging
-| Artifact | Version | Scope |
-|----------|---------|-------|
-| Firebase Android BoM | **34.13.0** | `androidApp` (platform dependency) |
-| `com.google.firebase:firebase-messaging` | via BoM (25.0.2) | `androidApp` |
-| Google Services plugin | `4.4.x` | root `build.gradle.kts` (check google() for latest) |
-### iOS — APNs
-### Push Notification Server Stub
-| Artifact | Version | Purpose |
-|----------|---------|---------|
-| `io.ktor:ktor-server-cio` | **3.4.0** | Minimal HTTP server for the stub |
-| `io.ktor:ktor-server-content-negotiation` | **3.4.0** | JSON body |
-| `io.ktor:ktor-serialization-kotlinx-json` | **3.4.0** | kotlinx-serialization backend |
-## 7. In-App Notifications
-### Android — Compose Material 3 built-ins only
-### iOS — SwiftUI overlays only
-## 8. Testing
-### commonTest (all platforms)
-| Library | Version | Artifact | Purpose |
-|---------|---------|---------|---------|
-| kotlin.test | bundled with Kotlin | `kotlin("test")` | Test runner + basic assertions; zero extra setup; JetBrains-maintained |
-| kotest-assertions-core | **5.9.x** | `io.kotest:kotest-assertions-core` | 350+ rich assertion DSL alongside kotlin.test; use assertions only, not the Kotest engine |
-| Turbine | **1.2.1** | `app.cash.turbine:turbine` | Flow / StateFlow testing; mandatory for ViewModel tests |
-| kotlinx-coroutines-test | **1.10.2** | `org.jetbrains.kotlinx:kotlinx-coroutines-test` | `runTest`, `TestCoroutineScheduler` |
-### androidTest (instrumented)
-| Library | Version | Artifact | Purpose |
-|---------|---------|---------|---------|
-| compose-ui-test-junit4 | via Compose BOM | `androidx.compose.ui:ui-test-junit4-android` | Compose UI instrumented tests |
-| compose-ui-test-manifest | via Compose BOM | `androidx.compose.ui:ui-test-manifest` (`debugImplementation`) | Activity manifest for test runner |
-### iOS tests (XCTest)
-## 9. CI / Publish Pipeline
-### GitHub Actions
-| Runner | When | Cost note |
-|--------|------|-----------|
-| `ubuntu-latest` | Gradle build, shared tests, Maven publish | 1× billing multiplier |
-| `macos-latest` | iOS build + XCTest, SPM tagging, KMMBridge publish | 10× billing multiplier — keep iOS jobs narrow |
-### Maven Central Publishing
-| Plugin | Version | Plugin ID |
-|--------|---------|-----------|
-| vanniktech gradle-maven-publish-plugin | **0.36.0** | `com.vanniktech.maven.publish` |
-### SPM / XCFramework Publishing
-| Plugin | Version | Plugin ID |
-|--------|---------|-----------|
-| KMMBridge | **1.1.0** (latest stable) | `co.touchlab.kmmbridge` |
-### CocoaPods
-## 10. What NOT to Use
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| Hilt | Not KMP-compatible; Google's KMP ViewModel guide explicitly names it as unavailable in `commonMain` | Koin |
-| KAPT | Deprecated; broken on AGP 9+ with KSP2; annotation processors must migrate to KSP | KSP (KSP2 default) |
-| KSP1 (`ksp.useKSP2=false`) | Deprecated, will be removed; incompatible with AGP 9 | KSP2 (default since KSP 2.0.0) |
-| Compose Multiplatform iOS UI | Rejected in architecture.md; SwiftUI is the iOS UI | SwiftUI + SKIE |
-| CocoaPods | Being deprecated for KMP; conflicts with XCFramework task | SPM via KMMBridge |
-| `kotlinx-datetime` Instant/Clock | Removed in 0.7.0+; use `kotlin.time.Instant` from stdlib | `kotlin.time.Instant` (stdlib) |
-| Firebase KTX modules (`firebase-*-ktx`) | Removed from Firebase BoM v34.0.0 (July 2025); no new versions | Depend on main modules directly (`firebase-messaging`) |
-| `com.squareup.sqldelight` | SQLDelight 1.x coordinates; abandoned; incompatible with KMP | `app.cash.sqldelight` (2.x) |
-| Kotest test engine in commonTest | Non-JVM engine has feature gaps; more complex Gradle setup | `kotlin.test` runner + `kotest-assertions-core` |
-| Third-party toast/notification libraries for SwiftUI | Conflict with SwiftUI's presentation layer on iOS 17+ | Native `.overlay` + `.animation` pattern |
-| Decompose | Viable alternative, but adds nav-state sharing complexity not needed here; deferred to per-product decision | Navigation 3 (Android) + `NavigationStack` (iOS) |
-| Molecule | Adds Compose-runtime to ViewModel layer; complicates iOS consumption; not needed for MVVM + StateFlow | Plain `StateFlow` in ViewModel |
-## 11. Version Compatibility Matrix
-| Kotlin | KSP | AGP | Gradle | SKIE |
-|--------|-----|-----|--------|------|
-| 2.3.21 | 2.3.21-2.0.4 | 9.2.0 | 9.5.0 | 0.10.11 |
-## 12. `gradle/libs.versions.toml` — Authoritative Version Block
-# Lifecycle / ViewModel
-# Compose BOM
-# Navigation 3
-# Coil
-# Ktor
-# SQLDelight
-# Koin
-# KotlinX
-# Firebase (androidApp only)
-# Testing
-## Sources
-- Kotlin 2.3.21 stable: [JetBrains Kotlin releases blog](https://blog.jetbrains.com/kotlin/2025/08/kmp-roadmap-aug-2025/) + [GitHub releases](https://github.com/jetbrains/kotlin/releases)
-- AGP 9.2.0: [developer.android.com/build/releases/agp-9-2-0-release-notes](https://developer.android.com/build/releases/agp-9-2-0-release-notes)
-- AGP 9.1.1: [developer.android.com/build/releases/agp-9-1-0-release-notes](https://developer.android.com/build/releases/agp-9-1-0-release-notes)
-- Gradle 9.5.0: [docs.gradle.org/current/release-notes.html](https://docs.gradle.org/current/release-notes.html)
-- Compose BOM 2026.05.00: [developer.android.com/develop/ui/compose/bom/bom-mapping](https://developer.android.com/develop/ui/compose/bom/bom-mapping)
-- androidx.lifecycle 2.10.0: [developer.android.com/jetpack/androidx/releases/lifecycle](https://developer.android.com/jetpack/androidx/releases/lifecycle)
-- Ktor 3.4.0: [ktor.io/docs/releases.html](https://ktor.io/docs/releases.html)
-- SQLDelight 2.3.2: [sqldelight.github.io/sqldelight/latest/2.x/](https://sqldelight.github.io/sqldelight/latest/2.x/)
-- Koin 4.2.1: [github.com/InsertKoinIO/koin/releases](https://github.com/InsertKoinIO/koin/releases) (Latest tag verified 2026-05-08)
-- SKIE 0.10.11: [github.com/touchlab/SKIE/releases](https://github.com/touchlab/SKIE/releases)
-- kotlinx-coroutines 1.10.2: [github.com/Kotlin/kotlinx.coroutines/releases](https://github.com/Kotlin/kotlinx.coroutines/releases)
-- kotlinx-serialization 1.10.0: [github.com/Kotlin/kotlinx.serialization/releases](https://github.com/Kotlin/kotlinx.serialization/releases)
-- kotlinx-datetime 0.7.1: [github.com/Kotlin/kotlinx-datetime/releases](https://github.com/Kotlin/kotlinx-datetime/releases)
-- Navigation 3 1.1.1: [developer.android.com/jetpack/androidx/releases/navigation3](https://developer.android.com/jetpack/androidx/releases/navigation3)
-- Coil 3.4.0: [coil-kt.github.io/coil/](https://coil-kt.github.io/coil/)
-- Firebase BoM 34.13.0: [firebase.google.com/support/release-notes/android](https://firebase.google.com/support/release-notes/android)
-- Turbine 1.2.1: [github.com/cashapp/turbine/releases](https://github.com/cashapp/turbine/releases)
-- vanniktech gradle-maven-publish 0.36.0: [github.com/vanniktech/gradle-maven-publish-plugin/releases](https://github.com/vanniktech/gradle-maven-publish-plugin/releases)
-- KMMBridge 1.1.0: [github.com/touchlab/KMMBridge](https://github.com/touchlab/KMMBridge) + [mvnrepository.com](https://mvnrepository.com/artifact/co.touchlab.kmmbridge/kmmbridge)
-- KSP2 / deprecation: [android-developers.googleblog.com KSP2 preview](https://android-developers.googleblog.com/2023/12/ksp2-preview-kotlin-k2-standalone.html)
-- Xcode 16 App Store requirement: [developer.apple.com/news/upcoming-requirements/](https://developer.apple.com/news/upcoming-requirements/)
-- GitHub Actions KMP CI: [kotlinlang.org/docs/multiplatform/github-actions-for-kmp.html](https://kotlinlang.org/docs/multiplatform/github-actions-for-kmp.html)
-<!-- GSD:stack-end -->
+- State assumptions explicitly. If uncertain, ask.
+- If multiple interpretations exist, present them — don't silently pick one.
+- If a simpler approach exists, say so. Push back when warranted.
+- If something is unclear, name what's confusing. Ask.
 
-<!-- GSD:conventions-start source:CONVENTIONS.md -->
-## Conventions
+### Simplicity First
+**Minimum code that solves the problem. Nothing speculative.**
 
-Conventions not yet established. Will populate as patterns emerge during development.
-<!-- GSD:conventions-end -->
+- No features beyond what was asked.
+- No abstractions for single-use code.
+- No error handling for impossible scenarios.
+- If you write 200 lines and it could be 50, rewrite it.
 
-<!-- GSD:architecture-start source:ARCHITECTURE.md -->
-## Architecture
+**Self-check:** "Would a senior engineer say this is overcomplicated?" If yes, simplify.
 
-Architecture not yet mapped. Follow existing patterns found in the codebase.
-<!-- GSD:architecture-end -->
+### Surgical Changes
+**Touch only what you must. Clean up only your own mess.**
 
-<!-- GSD:skills-start source:skills/ -->
-## Project Skills
+- Don't improve adjacent code, comments, or formatting.
+- Match existing style, even if you'd do it differently.
+- Remove imports/variables/functions YOUR change orphaned. Don't delete pre-existing dead code.
 
-No project skills found. Add skills to any of: `.claude/skills/`, `.agents/skills/`, `.cursor/skills/`, `.github/skills/`, or `.codex/skills/` with a `SKILL.md` index file.
-<!-- GSD:skills-end -->
+**The test:** every changed line traces directly to the user's request.
 
-<!-- GSD:workflow-start source:GSD defaults -->
-## GSD Workflow Enforcement
+### Goal-Driven Execution
+**Define success criteria. Loop until verified.**
 
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
+Transform tasks into verifiable goals:
+- "Fix the bug" → "Write a test that reproduces it, then make it pass"
+- "Add validation" → "Write tests for invalid inputs, then make them pass"
+- "Add a screen" → "Write a `commonTest` for the ViewModel state machine, then wire Compose + SwiftUI projections"
 
-Use these entry points:
-- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd-debug` for investigation and bug fixing
-- `/gsd-execute-phase` for planned phase work
+For multi-step work, state a brief plan:
+```
+1. [Step] → verify: [check]
+2. [Step] → verify: [check]
+```
 
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
+---
 
+## 2. Coding Standards
 
+**Project-specific rules. These are load-bearing — violating them breaks the architecture.**
 
-<!-- GSD:profile-start -->
-## Developer Profile
+- **State ownership.** Shared `ViewModel`s own state as `StateFlow<UiState>`. Views never mutate state. Events flow up via plain method calls (`onAppear`, `onSubmit(input)`).
+- **No platform types in `commonMain`.** Design tokens are primitives only — `Long` for ARGB, `Float`, `Int`. No `androidx.compose.ui.graphics.Color`, no SwiftUI `Color`, no `android.*`, no `UIKit.*`. Those don't compile on the other side.
+- **No business logic in `:androidApp` or `:iosApp`.** UI modules wire DI and render state. Push logic into `:shared-core` / `:shared-components` via `expect`/`actual` if it needs platform glue.
+- **No raw colors, fonts, sizes, or radii in UI code.** Pull from `shared-core/.../theme/DesignTokens.kt`.
+- **`gradle/libs.versions.toml` is the single source for every version.** No inline version literals in module `build.gradle.kts` files.
+- **One `ViewModel` per screen.** Cross-screen state lives in a Repository, not a shared VM.
+- **Direction of dependency:** UI → ViewModel → Use Case → Repository → Network/DB. Never reverse.
+- **No comments unless the *why* is non-obvious.** Code is the contract.
 
-> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
+---
+
+## 3. Architecture Overview
+
+**MVVM with a shared `androidx.lifecycle.ViewModel` exposing `StateFlow<UiState>`. Unidirectional data flow.**
+
+```
+ androidApp/  (Compose)               iosApp/  (SwiftUI)
+    │ collectAsStateWithLifecycle()      │ for await s in vm.state  (SKIE)
+    ▼                                    ▼
+    ───────────── shared modules (KMP) ─────────────
+    ViewModel  →  Use Cases  →  Repository  →  { Ktor, SQLDelight }
+                       Koin DI wires the graph.
+```
+
+**Modules** (see `settings.gradle.kts`):
+- `:shared-core` — DI, Ktor, SQLDelight, base repositories, design tokens.
+- `:shared-components` — reusable component ViewModels + `expect`/`actual` services (forms, amount input, sidebar nav, notifications).
+- `:shared-app` — showcase wiring; never published.
+- `:androidApp` — Jetpack Compose UI.
+- `:iosApp` — Xcode project; consumes the shared XCFramework via SPM.
+- `:server` — JVM Ktor server stub for push notifications.
+
+Full rationale and references: [`architecture.md`](architecture.md).
+
+---
+
+## 4. Platform Bindings
+
+**The Kotlin↔Swift / Kotlin↔Compose contract. Get this wrong and the build fails or one platform silently drifts.**
+
+### Android (Compose)
+```kotlin
+@Composable
+fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { viewModel.onAppear() }
+    // render based on state
+}
+```
+
+### iOS (SwiftUI + SKIE)
+- iOS has no native `ViewModelStoreOwner`. Use `IosViewModelStoreOwner` (`iosApp/iosApp/Common/IosViewModelStoreOwner.swift`) per Google's KMP ViewModel guide.
+- SKIE bridges `StateFlow` to a SwiftUI-friendly `AsyncSequence`. Consume with `for await s in vm.state`.
+- `shared-core/build.gradle.kts` must `api(libs.androidx.lifecycle.viewmodel)` **and** `framework { export(...) }` it, so the `ViewModel` type is visible in the iOS framework.
+
+### Design tokens (cross-platform)
+- Defined once in `shared-core/.../theme/DesignTokens.kt` as pure primitives.
+- Android adapter maps tokens → `MaterialTheme` / `Color(0xFF...)` / `.sp` / `.dp`.
+- iOS adapter maps tokens → SwiftUI `Color(.sRGB, ...)` / `Font.custom(...)`.
+- Light/dark resolved at the platform root, never in shared.
+
+---
+
+## 5. Testing
+
+- **Shared logic:** `kotlin.test` + `kotest-assertions-core` + **Turbine** for `StateFlow`.
+- **Every `ViewModel` needs a `commonTest`** driving the state machine through Loading → Ready → Error.
+- **Android UI:** Compose UI tests (instrumented).
+- **iOS UI:** XCTest.
+- **Targeted before broad.** Run the most local test first; broaden only if it passes or a regression is suspected.
+
+```bash
+./gradlew :shared-core:allTests              # shared tests across KMP targets
+./gradlew :shared-components:allTests
+./gradlew :androidApp:connectedAndroidTest   # Android instrumented
+# iOS: ⌘U in Xcode
+```
+
+---
+
+## 6. Development Workflow
+
+**Safety:**
+- Ask before destructive ops (delete files, force push, reset, DB drop, mass-rename).
+- Never commit, push, open PRs, or call external services unless explicitly asked.
+
+**Tooling:**
+- Prefer dedicated tools: Read > cat, Edit > sed, Grep/Glob > find.
+- Issue parallel tool calls when independent.
+- Reference code as `path:line`.
+- List changed files in every final response.
+
+**Validation cadence per change:**
+1. Edit → 2. Targeted test → 3. Module test → 4. Cross-platform smoke (`./gradlew check`) only if you touched shared API surface.
+
+---
+
+## 7. Setup & Build
+
+Full instructions in [`README.md`](README.md) (Prerequisites, Running, Renaming).
+
+Common commands:
+```bash
+./gradlew :androidApp:installDebug   # Android: build & install on device/emulator
+./gradlew :shared-core:allTests      # Shared tests across all KMP targets
+./gradlew check                      # Static analysis
+open iosApp/iosApp.xcodeproj         # iOS: open in Xcode, ⌘R
+```
+
+Prerequisites: **JDK 21**, Android SDK, **Xcode 16+**. Versions are pinned in `gradle/libs.versions.toml` — don't drift.
+
+---
+
+**These guidelines are working if:** state-ownership is never violated, no platform types leak into `commonMain`, diffs trace cleanly to the request, and clarifying questions come before implementation rather than after mistakes.
