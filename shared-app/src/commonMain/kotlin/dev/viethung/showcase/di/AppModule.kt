@@ -1,6 +1,7 @@
 package dev.viethung.showcase.di
 
 import dev.viethung.core.di.coreModule
+import dev.viethung.showcase.auth.login.LoginViewModel
 import dev.viethung.showcase.greeting.GetGreetingUseCase
 import dev.viethung.showcase.greeting.GreetingRepository
 import dev.viethung.showcase.greeting.GreetingRepositoryImpl
@@ -15,6 +16,8 @@ val appModule = module {
     factory<GreetingRepository> { GreetingRepositoryImpl(get()) }
     factory { GetGreetingUseCase(get()) }
     factory { GreetingViewModel(get()) }
+
+    factory { LoginViewModel(get()) }
 }
 
 /**
