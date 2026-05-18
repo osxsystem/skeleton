@@ -367,57 +367,108 @@ fun LoginScreen(
 
 ## 11. Step 7 — SwiftUI UI (iOS)
 
+SKIE is disabled in this repo (`shared-components/build.gradle.kts:66-71`, see PRD §14.D). Two SKIE-only idioms — `KClass<T>` for `ViewModelProvider.get` and `for await` on a `Flow` — don't bridge ergonomically to Swift, so we add a per-VM Kotlin helper file in `commonMain` that hides those types behind plain functions. Mirror `GreetingViewModelHelper.kt`.
+
+```kotlin
+// :shared-app/.../auth/login/LoginViewModelHelper.kt
+package dev.viethung.showcase.auth.login
+
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+
+fun createLoginViewModel(store: ViewModelStore): LoginViewModel =
+    ViewModelProvider.create(store, loginViewModelFactory)[LoginViewModel::class]
+
+fun subscribeLoginState(
+    vm: LoginViewModel,
+    onState: (LoginUiState) -> Unit,
+): Job = CoroutineScope(Dispatchers.Main).launch {
+    vm.state.collect { onState(it) }
+}
+```
+
 ```swift
-// :iosApp/.../Auth/LoginScreen.swift
+// :iosApp/iosApp/Auth/LoginScreen.swift
+import SwiftUI
+import SkeletonApp
+
 struct LoginScreen: View {
     @StateObject private var owner = IosViewModelStoreOwner()
-    @State private var uiState: LoginUiState = LoginUiState.Editing()
+    @State private var uiState: LoginUiState = LoginUiStateEditing(
+        email: "", password: "",
+        emailError: nil, passwordError: nil,
+        isSubmitEnabled: false
+    )
+    @State private var stateJob: Kotlinx_coroutines_coreJob?
     let onSuccess: () -> Void
 
     var body: some View {
-        let vm: LoginViewModel = owner.viewModel(
-            factory: LoginViewModelFactoryKt.loginViewModelFactory
+        let vm: LoginViewModel = LoginViewModelHelperKt.createLoginViewModel(
+            store: owner.viewModelStore
         )
 
         ZStack {
-            switch uiState {
-            case let editing as LoginUiState.Editing:
-                LoginForm(state: editing, vm: vm)
-            case let submitting as LoginUiState.Submitting:
-                SubmittingOverlay(email: submitting.email)
-            case let failed as LoginUiState.Failed:
-                LoginForm(
-                    state: LoginUiState.Editing(email: failed.email, password: "", emailError: nil, passwordError: nil, isSubmitEnabled: false),
-                    vm: vm
-                )
-            case is LoginUiState.Succeeded:
-                EmptyView()
-            default:
-                EmptyView()
-            }
+            stateContent(vm: vm)
         }
         .alert(
             "Login failed",
-            isPresented: .constant(uiState is LoginUiState.Failed),
+            isPresented: .constant(uiState is LoginUiStateFailed),
             actions: { Button("OK") { vm.onErrorDismissed() } },
             message: {
-                if let f = uiState as? LoginUiState.Failed { Text(f.message) }
+                if let failed = uiState as? LoginUiStateFailed {
+                    Text(failed.message)
+                }
             }
         )
         .task {
-            for await s in vm.state {            // SKIE bridges StateFlow → AsyncSequence
-                uiState = s
-                if s is LoginUiState.Succeeded {
+            stateJob = LoginViewModelHelperKt.subscribeLoginState(vm: vm) { state in
+                uiState = state
+                if state is LoginUiStateSucceeded {
                     onSuccess()
                     vm.onNavigatedToDashboard()
                 }
             }
         }
+        .onDisappear {
+            stateJob?.cancel(cause: nil)
+            stateJob = nil
+        }
+    }
+
+    @ViewBuilder
+    private func stateContent(vm: LoginViewModel) -> some View {
+        if let editing = uiState as? LoginUiStateEditing {
+            LoginForm(state: editing, vm: vm)
+        } else if let submitting = uiState as? LoginUiStateSubmitting {
+            SubmittingOverlay(email: submitting.email)
+        } else if let failed = uiState as? LoginUiStateFailed {
+            // Render the form behind the alert so the user sees their email preserved.
+            LoginForm(
+                state: LoginUiStateEditing(
+                    email: failed.email, password: "",
+                    emailError: nil, passwordError: nil,
+                    isSubmitEnabled: false
+                ),
+                vm: vm
+            )
+        } else {
+            // LoginUiStateSucceeded — navigation is handled by the subscribe callback.
+            EmptyView()
+        }
     }
 }
 ```
 
-**Why `@StateObject` + `IosViewModelStoreOwner`?** SwiftUI doesn't have AndroidX's `ViewModel` lifecycle. The owner ties the VM's lifetime to the View's lifetime exactly the way Android does it. This pattern is the official Google recommendation — see [`../../architecture.md`](../../architecture.md) §Platform Bindings.
+**Why `@StateObject` + `IosViewModelStoreOwner`?** SwiftUI doesn't have AndroidX's `ViewModel` lifecycle. The owner ties the VM's lifetime to the View's lifetime the way Android does. When SwiftUI deallocates the owner, its `deinit` calls `viewModelStore.clear()`, which fires `onCleared()` on the ViewModel and cancels `viewModelScope`. See [`../../architecture.md`](../../architecture.md) §Platform Bindings.
+
+**Why `as?` casts instead of `switch case let _ as _`?** The K/N bridge exports the sealed-interface subtypes as flat Obj-C classes (`LoginUiStateEditing`, `LoginUiStateSubmitting`, `LoginUiStateFailed`, `LoginUiStateSucceeded`). Swift's `switch case let _ as` is awkward on bridged Obj-C class hierarchies; `if let _ = x as? T` reads cleaner. Matches `GreetingScreen.swift:34-44`.
+
+**Why cancel `stateJob` on `.onDisappear`?** The job is rooted in a `CoroutineScope(Dispatchers.Main)` *outside* `viewModelScope` (the helper creates a fresh scope per subscription so multiple Swift views can subscribe independently). Without an explicit cancel, the collection coroutine leaks for the lifetime of the process. Matches `GreetingScreen.swift:27-30`.
 
 ---
 
