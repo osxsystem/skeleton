@@ -312,7 +312,7 @@ No Combine, no `@Published` bridge. Reference: `GreetingScreen.swift:5-30`. Re-e
 | `LoginScreen` Compose | Compose UI test | Submit disabled when empty; alert appears on failure |
 | `LoginScreen` SwiftUI | XCTest (XCUI) | Same scenarios as Compose |
 
-**Test placement** — `kotlin.test.Test` NOT `org.junit.Test` (D-17 / Pitfall 18; enforced in `shared-components/build.gradle.kts:46-51`).
+**Test placement** — `kotlin.test.Test` NOT `org.junit.Test` (D-17 / Pitfall 18; enforced in `shared-app/build.gradle.kts:55-60`).
 
 ---
 
