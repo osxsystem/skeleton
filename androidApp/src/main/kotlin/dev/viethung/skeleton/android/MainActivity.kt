@@ -4,19 +4,34 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import dev.viethung.skeleton.android.greeting.GreetingScreen
+import dev.viethung.skeleton.android.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            // Phase 1: single screen, no NavHost (deferred to Phase 5 per CONTEXT.md)
-            MaterialTheme {
+            var themeOverride: Boolean? by rememberSaveable { mutableStateOf<Boolean?>(null) }
+            val isDark = themeOverride ?: isSystemInDarkTheme()
+            AppTheme(isDark = isDark) {
                 Surface {
-                    GreetingScreen()
+                    GreetingScreen(
+                        themeOverride = themeOverride,
+                        onCycleTheme = {
+                            themeOverride = when (themeOverride) {
+                                null  -> false
+                                false -> true
+                                true  -> null
+                            }
+                        },
+                    )
                 }
             }
         }
