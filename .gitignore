@@ -1,3 +1,33 @@
+# macOS
 .DS_Store
 
+# Gradle
+.gradle/
+build/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+
+# Xcode / iOS
+xcuserdata/
+*.xcuserstate
+DerivedData/
+# XcodeGen-generated artifacts — regenerated from iosApp/project.yml via iosApp/generate-xcodeproj.sh
+iosApp/iosApp.xcodeproj/
+iosApp/iosApp/Info.plist
+
+# AI tooling (local, non-shareable)
+.claude/
+.agents/
+skills-lock.json
+
+# GSD planning scratch
+.planning/tmp/
+
+# Third-party source imports (not part of this project)
 compose-multiplatform-core
+
+# server
+server
