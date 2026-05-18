@@ -29,6 +29,9 @@ kotlin {
             // Export :shared-core types so iOS sees them through a single framework import
             export(project(":shared-core"))
             export(libs.androidx.lifecycle.viewmodel)
+
+            // SQLDelight NativeSqliteDriver requires libsqlite3 (Pitfall 19) — mirror :shared-core
+            linkerOpts.add("-lsqlite3")
         }
     }
 

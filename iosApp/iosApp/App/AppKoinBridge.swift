@@ -1,4 +1,4 @@
-import SkeletonKit
+import SkeletonApp
 
 /**
  * Bridges Koin initialization from Swift to Kotlin.
@@ -8,10 +8,13 @@ import SkeletonKit
  *
  * IN-03 note: the Swift symbol for Kotlin top-level fun initKoin(vararg platformModules: Module)
  * may be doInitKoin or initKoin depending on the SKIE version. Verify in the generated
- * SkeletonKit.framework/Headers before building. The pre-flight grep above confirms the name.
+ * SkeletonApp.framework/Headers before building. The pre-flight grep above confirms the name.
  */
 final class AppKoinBridge {
     static func start() {
-        AppModuleKt.doInitKoin(platformModules: [IosPlatformModuleKt.iosPlatformModule])
+        let modules = KotlinArray<Koin_coreModule>(size: 1) { _ in
+            IosPlatformModuleKt.iosPlatformModule
+        }
+        AppModuleKt.doInitKoin(platformModules: modules)
     }
 }

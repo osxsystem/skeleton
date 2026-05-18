@@ -1,32 +1,34 @@
 import SwiftUI
-import SkeletonKit
+import SkeletonApp
 
 struct GreetingScreen: View {
-    // D-12 / Pitfall 1+2: ALWAYS @StateObject — never @ObservedObject
     @StateObject private var owner = IosViewModelStoreOwner()
-    @State private var uiState: GreetingViewModelUiState = .loading
+    @State private var uiState: GreetingViewModelUiState = GreetingViewModelUiStateLoading.shared
+    @State private var stateJob: Kotlinx_coroutines_coreJob?
 
     var body: some View {
-        let vm: GreetingViewModel = owner.viewModel(
-            factory: GreetingViewModelFactoryKt.greetingViewModelFactory
+        let vm: GreetingViewModel = GreetingViewModelHelperKt.createGreetingViewModel(
+            store: owner.viewModelStore
         )
         Group {
-            switch onEnum(of: uiState) {
-            case .loading:
-                ProgressView()
-            case .ready(let s):
-                Text(s.message)
-                    .font(.title)
-            case .error(let e):
-                Text("Error: \(e.message)")
+            if let ready = uiState as? GreetingViewModelUiStateReady {
+                Text(ready.message).font(.title)
+            } else if let error = uiState as? GreetingViewModelUiStateError {
+                Text("Error: \(error.message)")
                     .foregroundColor(.red)
+            } else {
+                ProgressView()
             }
         }
         .task {
             vm.loadGreeting(id: 1)
-            for await s in vm.state {    // SKIE bridges StateFlow -> AsyncSequence
-                uiState = s
+            stateJob = GreetingViewModelHelperKt.subscribeGreetingState(vm: vm) { state in
+                uiState = state
             }
+        }
+        .onDisappear {
+            stateJob?.cancel(cause: nil)
+            stateJob = nil
         }
         .navigationTitle("Greeting")
     }
