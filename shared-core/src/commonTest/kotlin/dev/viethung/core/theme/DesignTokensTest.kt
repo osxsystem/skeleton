@@ -127,4 +127,62 @@ class DesignTokensTest {
         assertTrue(DesignTokens.spacing.lg  < DesignTokens.spacing.xl,  "lg < xl")
         assertTrue(DesignTokens.spacing.xl  < DesignTokens.spacing.xxl, "xl < xxl")
     }
+
+    @Test
+    fun rapidToggleSimulation() {
+        val expected = (0 until 10).map { index ->
+            if (index % 2 == 1) DesignTokens.DarkColors.primary
+            else                DesignTokens.LightColors.primary
+        }
+        val actual = (0 until 10).map { index ->
+            val isDark = index % 2 == 1
+            if (isDark) DesignTokens.DarkColors.primary else DesignTokens.LightColors.primary
+        }
+        assertTrue(
+            DesignTokens.LightColors.primary != DesignTokens.DarkColors.primary,
+            "LightColors.primary and DarkColors.primary must be distinct — palettes appear swapped"
+        )
+        actual.forEachIndexed { index, value ->
+            assertTrue(
+                value == expected[index],
+                "Toggle iteration $index: expected ${expected[index]} but got $value"
+            )
+        }
+    }
+
+    @Test
+    fun darkColorsBrightInDark() {
+        assertTrue(
+            DesignTokens.DarkColors.background < DesignTokens.LightColors.background,
+            "DarkColors.background (${DesignTokens.DarkColors.background}) should be numerically " +
+            "less than LightColors.background (${DesignTokens.LightColors.background}). " +
+            "Palettes may be swapped — see D-16 in 02-CONTEXT.md"
+        )
+        assertTrue(
+            DesignTokens.DarkColors.surface < DesignTokens.LightColors.surface,
+            "DarkColors.surface (${DesignTokens.DarkColors.surface}) should be numerically " +
+            "less than LightColors.surface (${DesignTokens.LightColors.surface}). " +
+            "Palettes may be swapped."
+        )
+        assertTrue(
+            DesignTokens.DarkColors.onBackground > DesignTokens.LightColors.onBackground,
+            "DarkColors.onBackground (${DesignTokens.DarkColors.onBackground}) should be numerically " +
+            "greater than LightColors.onBackground (${DesignTokens.LightColors.onBackground}). " +
+            "On-roles invert direction — palettes may be swapped."
+        )
+        assertTrue(
+            DesignTokens.DarkColors.surfaceContainerLowest < DesignTokens.LightColors.surfaceContainerLowest,
+            "DarkColors.surfaceContainerLowest (${DesignTokens.DarkColors.surfaceContainerLowest}) " +
+            "should be less than LightColors.surfaceContainerLowest (${DesignTokens.LightColors.surfaceContainerLowest}). " +
+            "Surface container hierarchy may be swapped."
+        )
+        assertEquals(
+            DesignTokens.DarkColors.primary, DesignTokens.LightColors.inversePrimary,
+            "LightColors.inversePrimary must equal DarkColors.primary (M3 inverse-role convention)."
+        )
+        assertEquals(
+            DesignTokens.LightColors.primary, DesignTokens.DarkColors.inversePrimary,
+            "DarkColors.inversePrimary must equal LightColors.primary (M3 inverse-role convention)."
+        )
+    }
 }

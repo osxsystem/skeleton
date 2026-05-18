@@ -44,13 +44,20 @@
 
 ### Pitfall mitigations (Phase 2 owns these)
 - **D-15:** Pitfall 6 (ARGB Long overflow) — every color constant ends with `L`; `commonTest` `noColorConstantIsNegative()` runs on both JVM and `iosSimulatorArm64` targets; Swift adapter uses `Int64`.
-- **D-16:** Pitfall 7 (dark mode selection on wrong side) — `DesignTokens` only exports both palettes; Swift `@Environment(\.colorScheme)` is the sole selector; no `isDark: Boolean` is ever passed from Swift to Kotlin. Rapid-switch test (10 toggles in iOS Simulator) is the smoke test.
+- **D-16:** Pitfall 7 (dark mode selection on wrong side) — `DesignTokens` only exports both palettes; the platform UI layer (Compose `MainActivity` / SwiftUI `iosApp`) is the sole selector; no `isDark: Boolean` is ever passed from Swift / Compose to `commonMain`. Rapid-switch test (10 toggles via in-app button per D-17) is the smoke test.
+
+### In-app theme toggle (validated 2026-05-18)
+- **D-17:** `GreetingScreen` on both platforms gets a single button that cycles the active theme. The toggle **overrides** the system appearance for the app's process; OS-level dark/light setting is bypassed once the user taps the button.
+  - **Android:** `MainActivity.setContent` hoists `var themeOverride: Boolean? by rememberSaveable { mutableStateOf<Boolean?>(null) }`. `AppTheme` is invoked with `isDark = themeOverride ?: isSystemInDarkTheme()` (signature: `@Composable fun AppTheme(isDark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit)`). `GreetingScreen` receives `themeOverride: Boolean?` and `onCycleTheme: () -> Unit`; tapping advances the cycle **`null → false → true → null`** — three states, matching iOS for UX parity. Button label depends on `themeOverride`: `null → "Override theme"`, `false → "Switch to Dark"`, `true → "Switch to System"`. **AppCompatDelegate.setDefaultNightMode was considered and rejected** — it would require switching `MainActivity` from `ComponentActivity` to `AppCompatActivity` and adding `androidx.appcompat:appcompat`. The pure-Compose state hoist gives the same UX with zero new dependencies. Trade-off: override persists across configuration changes via `rememberSaveable` but resets on process death — acceptable for a demo gesture.
+  - **iOS:** `iosApp.swift` `WindowGroup` hoists `@State private var themeOverride: ColorScheme? = nil`. `WindowGroup` content applies `.preferredColorScheme(themeOverride)`. The `.environment(\.appTheme, ...)` modifier reads `(themeOverride ?? systemColorScheme) == .dark` to pick the palette. `ContentView` receives a `Binding<ColorScheme?>` and forwards it to `GreetingScreen`. Toggle cycles `nil → .light → .dark → nil` (three states, symmetric with Android).
+  - **Pitfall 7 invariant preserved:** palette selection still lives in each platform's UI layer. No `isDark: Boolean` crosses into `commonMain`. `DesignTokens` continues to export both palettes only.
+  - **Verification scope trade-off (accepted):** `02-04-CKP` human-verify gate drives the in-app button instead of the OS Settings path. The "system appearance change → palette" code path is no longer covered by a manual gate (only by the same `AppTheme.build(isDark:)` adapter that the button path exercises).
 
 ### Claude's Discretion
-- Exact hex values for the Skeleton identity palette — planner picks an indigo/teal/neutral scheme that looks intentional. No specific values committed here.
-- Whether `DesignTokens` is a Kotlin `object` (singleton) or a set of top-level `const val` declarations — planner decides; `object` is the cleaner namespace.
-- Whether `ThemeColors`, `ThemeTypography`, `ThemeSpacing`, `ThemeRadius` are `struct` or `class` in Swift — `struct` is idiomatic for value types in SwiftUI environment.
-- Whether to add a `SHOW-04`-style runtime theme toggle to the `GreetingScreen` for Phase 2 demonstration purposes — planner may add a simple system-appearance toggle knob to the showcase if it makes dark mode verification easier, but it's not required.
+- ~~Exact hex values for the Skeleton identity palette~~ — **Resolved 2026-05-18 (V-D1):** hex values committed in `02-01-PLAN.md` (indigo `0xFF3F51B5L` primary, teal `0xFF009688L` tertiary). Treated as skeleton placeholder; cloned products override.
+- ~~Whether `DesignTokens` is a Kotlin `object` or top-level `const val`~~ — **Resolved:** `object DesignTokens { object LightColors { ... } ... }` (see `02-01-PLAN.md` §131).
+- ~~Whether `ThemeColors`, etc. are `struct` or `class` in Swift~~ — **Resolved:** `struct` (see `02-03-PLAN.md` §200, §279).
+- ~~Whether to add a `SHOW-04`-style runtime theme toggle~~ — **Resolved 2026-05-18 (V-D2 / V-D3):** in-scope per **D-17** above. Phase 6 SHOW-04 remains the broader theme-customization picker; D-17 is the minimum visible demonstration.
 
 </decisions>
 

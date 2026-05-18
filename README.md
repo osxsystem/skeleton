@@ -4,7 +4,7 @@ A personal Kotlin Multiplatform mobile-app **skeleton template**. Shared Kotlin 
 
 Designed to be cloned, renamed, and used as the foundation for new product ideas.
 
-> **Status**: design phase. No code on disk yet — this README defines the target architecture. First implementation pass starts **2026-05-07**.
+> **Status**: in active development. Phase 1 (KMP scaffold + tooling) and Phase 2 (design token bridge — shared `DesignTokens.kt` + Compose + SwiftUI adapters + dark-mode toggle) are live. See `.planning/ROADMAP.md` for the full phase plan.
 > **Working title** `Skeleton` is a placeholder. See [Renaming](#renaming-the-skeleton) before turning this into a real project.
 
 ---
@@ -136,7 +136,7 @@ Box(Modifier.padding(DesignTokens.Spacing.md.dp)) { /* … */ }
 ```swift
 // iosApp/iosApp/Theme/AppTheme.swift
 import SwiftUI
-import shared   // SKIE-generated framework
+import SkeletonApp   // umbrella XCFramework emitted by :shared-app
 
 enum AppTheme {
     static func color(_ argb: Int64) -> Color {
@@ -222,27 +222,32 @@ Some primitives are platform-native by design — SF Pro on iOS, Roboto/Inter on
 
 ```
 skeleton/
-├─ shared/                 # KMP module — ViewModels, use cases, data, DI, design tokens
-│  ├─ src/
-│  │  ├─ commonMain/       # platform-agnostic Kotlin
-│  │  │  └─ kotlin/dev/skeleton/
-│  │  │     ├─ theme/      # DesignTokens, LightColors, DarkColors  (single source of truth for visual primitives)
-│  │  │     ├─ data/       # repositories, network, persistence
-│  │  │     ├─ domain/     # use cases, models
-│  │  │     └─ ui/         # shared StateFlow ViewModels
-│  │  ├─ androidMain/      # actuals (DataStore, Android Context)
-│  │  ├─ iosMain/          # actuals (Keychain, NSURLSession config…)
-│  │  └─ commonTest/
-│  └─ build.gradle.kts
+├─ shared-core/            # KMP — DI, Ktor client, SQLDelight, base repositories, DesignTokens
+│  └─ src/{commonMain,commonTest,androidMain,iosMain}/
+│     └─ kotlin/dev/viethung/core/
+│        ├─ theme/         # DesignTokens, ColorPalette, LightColors, DarkColors (visual primitives)
+│        ├─ db/            # SQLDelight driver factory (expect/actual)
+│        └─ network/       # Ktor client setup
+├─ shared-components/      # KMP — reusable component ViewModels + expect/actual services
+│  └─ src/{commonMain,commonTest,androidMain,iosMain}/
+├─ shared-app/             # KMP — showcase wiring; emits SkeletonApp.xcframework for iOS
+│  └─ src/{commonMain,commonTest,iosMain}/
+│     └─ kotlin/dev/viethung/showcase/
+│        ├─ di/            # Koin module wiring (AppModule, IosPlatformModule)
+│        └─ greeting/      # Example ViewModel + Factory + iOS construction helpers
 ├─ androidApp/             # Android Compose app
-│  ├─ src/main/
-│  └─ build.gradle.kts
-├─ iosApp/                 # Xcode project
-│  ├─ iosApp.xcodeproj/
-│  ├─ iosApp/              # SwiftUI sources
-│  └─ Package.swift        # consumes shared framework via SPM
+│  └─ src/main/kotlin/dev/viethung/skeleton/android/
+│     ├─ theme/            # AppTheme.kt — Compose adapter (DesignTokens → MaterialTheme)
+│     └─ greeting/         # GreetingScreen.kt
+├─ iosApp/                 # Xcode app (project.yml + generate-xcodeproj.sh source of truth)
+│  ├─ project.yml          # XcodeGen spec — defines iosApp + iosAppTests targets
+│  ├─ generate-xcodeproj.sh# bootstraps SkeletonApp.xcframework + runs xcodegen
+│  ├─ iosApp.xcodeproj/    # generated; do not hand-edit (regenerated from project.yml)
+│  ├─ iosApp/              # SwiftUI sources: App/, Common/, Greeting/, Theme/
+│  └─ iosAppTests/         # XCTest: AppThemeTests (Color(argb:) alpha-preservation)
+├─ server/                 # JVM Ktor stub (push notifications endpoint; build-gated)
 ├─ build.gradle.kts        # root
-├─ settings.gradle.kts
+├─ settings.gradle.kts     # registers :shared-core, :shared-components, :shared-app, :androidApp, :server
 ├─ gradle/libs.versions.toml
 └─ README.md               # this file
 ```
@@ -254,6 +259,7 @@ skeleton/
 | JDK          | 21                   | Set `JAVA_HOME`                                    |
 | Android SDK  | latest stable        | Set `ANDROID_HOME` / `ANDROID_SDK_ROOT`            |
 | Xcode        | 15.4+                | For iOS builds                                     |
+| XcodeGen     | 2.45+                | iOS only — generates `iosApp.xcodeproj` from `iosApp/project.yml`. Install: `brew install xcodegen` |
 | Kotlin       | pinned in `libs.versions.toml` | Don't drift                              |
 | CocoaPods    | not required         | Using SPM                                          |
 
@@ -266,8 +272,9 @@ skeleton/
 # Shared tests
 ./gradlew :shared:allTests
 
-# iOS — open in Xcode, select simulator, ⌘R
-open iosApp/iosApp.xcodeproj
+# iOS — generate Xcode project (first time + whenever project.yml changes), then open
+./iosApp/generate-xcodeproj.sh    # builds SkeletonApp.xcframework + runs xcodegen
+open iosApp/iosApp.xcodeproj      # select simulator, ⌘R
 
 # Static analysis (TBD: ktlint / detekt)
 ./gradlew check
