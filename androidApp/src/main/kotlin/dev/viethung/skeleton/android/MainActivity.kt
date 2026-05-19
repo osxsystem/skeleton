@@ -10,7 +10,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import dev.viethung.skeleton.android.greeting.GreetingScreen
+import dev.viethung.skeleton.android.auth.LoginScreen
+import dev.viethung.skeleton.android.dashboard.DashboardPlaceholder
 import dev.viethung.skeleton.android.theme.AppTheme
 
 class MainActivity : ComponentActivity() {
@@ -22,16 +23,22 @@ class MainActivity : ComponentActivity() {
             val isDark = themeOverride ?: isSystemInDarkTheme()
             AppTheme(isDark = isDark) {
                 Surface {
-                    GreetingScreen(
-                        themeOverride = themeOverride,
-                        onCycleTheme = {
-                            themeOverride = when (themeOverride) {
-                                null  -> false
-                                false -> true
-                                true  -> null
-                            }
-                        },
-                    )
+                    var isAuthenticated by rememberSaveable { mutableStateOf(false) }
+                    if (!isAuthenticated) {
+                        LoginScreen(onSuccess = { isAuthenticated = true })
+                    } else {
+                        DashboardPlaceholder(
+                            themeOverride = themeOverride,
+                            onCycleTheme = {
+                                themeOverride = when (themeOverride) {
+                                    null  -> false
+                                    false -> true
+                                    true  -> null
+                                }
+                            },
+                            onLogout = { isAuthenticated = false },
+                        )
+                    }
                 }
             }
         }
