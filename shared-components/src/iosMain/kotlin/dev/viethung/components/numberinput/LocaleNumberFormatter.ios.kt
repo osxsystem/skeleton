@@ -32,6 +32,19 @@ private class IosLocaleNumberFormatter : LocaleNumberFormatter {
                 .replace(nf.decimalSeparator.orEmpty(), ".")
                 .toDoubleOrNull()
     }
+
+    override fun formatLive(rawText: String, locale: String): String {
+        if (rawText.isEmpty()) return ""
+        val nf = NSNumberFormatter().apply {
+            this.locale = NSLocale(localeIdentifier = locale)
+            this.numberStyle = NSNumberFormatterDecimalStyle
+            this.usesGroupingSeparator = true
+        }
+        return liveFormat(rawText, nf.groupingSeparator.orEmpty(), nf.decimalSeparator.orEmpty()) { digits ->
+            val n = digits.toLongOrNull() ?: return@liveFormat digits
+            nf.stringFromNumber(NSNumber(longLong = n)).orEmpty()
+        }
+    }
 }
 
 actual fun newLocaleNumberFormatter(): LocaleNumberFormatter = IosLocaleNumberFormatter()

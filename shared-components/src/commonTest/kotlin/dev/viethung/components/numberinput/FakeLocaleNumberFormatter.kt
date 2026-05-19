@@ -2,27 +2,56 @@ package dev.viethung.components.numberinput
 
 /**
  * Test double for [LocaleNumberFormatter]. Deterministic, no NSNumberFormatter dependency.
- * Uses simple string formatting — sufficient for VM state-machine tests.
+ * Knows about en-US, vi-VN, de-DE separators — enough for VM state-machine tests.
  */
 class FakeLocaleNumberFormatter : LocaleNumberFormatter {
+
+    private fun separators(locale: String): Pair<String, String> = when (locale) {
+        "vi-VN", "de-DE" -> "." to ","
+        else -> "," to "."
+    }
+
     override fun format(value: Double, significantDigits: Int, locale: String): String {
-        // Build a simple fixed-precision string without using JVM-only APIs.
+        val (groupSep, decSep) = separators(locale)
         val sign = if (value < 0.0) "-" else ""
         val abs = kotlin.math.abs(value)
         val multiplier = pow10(significantDigits)
         val rounded = kotlin.math.round(abs * multiplier).toDouble() / multiplier
         val intPart = rounded.toLong()
+        val groupedInt = groupDigits(intPart.toString(), groupSep)
         val fracStr = if (significantDigits == 0) {
             ""
         } else {
             val fracValue = kotlin.math.round((rounded - intPart.toDouble()) * multiplier).toLong()
-            "." + fracValue.toString().padStart(significantDigits, '0')
+            decSep + fracValue.toString().padStart(significantDigits, '0')
         }
-        return "$sign$intPart$fracStr"
+        return "$sign$groupedInt$fracStr"
     }
 
-    override fun parse(rawText: String, locale: String): Double? =
-        rawText.takeIf { it.isNotBlank() }?.toDoubleOrNull()
+    override fun parse(rawText: String, locale: String): Double? {
+        if (rawText.isBlank()) return null
+        val (groupSep, decSep) = separators(locale)
+        return rawText.replace(groupSep, "").replace(decSep, ".").toDoubleOrNull()
+    }
+
+    override fun formatLive(rawText: String, locale: String): String {
+        val (groupSep, decSep) = separators(locale)
+        return liveFormat(rawText, groupSep, decSep) { digits ->
+            val n = digits.toLongOrNull() ?: return@liveFormat digits
+            groupDigits(n.toString(), groupSep)
+        }
+    }
+
+    private fun groupDigits(digits: String, groupSep: String): String {
+        if (digits.length <= 3) return digits
+        val sb = StringBuilder()
+        val rev = digits.reversed()
+        for (i in rev.indices) {
+            if (i > 0 && i % 3 == 0) sb.append(groupSep)
+            sb.append(rev[i])
+        }
+        return sb.reverse().toString()
+    }
 
     private fun pow10(n: Int): Double {
         var result = 1.0

@@ -22,7 +22,7 @@ let package = Package(
         ),
         .testTarget(
             name: "NumberInputTests",
-            dependencies: ["NumberInput"]
+            dependencies: ["NumberInput", "SkeletonKit"]
         )
     ]
 )

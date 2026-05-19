@@ -1,4 +1,5 @@
 import XCTest
+import SkeletonKit
 @testable import NumberInput
 
 /// Unit tests for NumberInputBridge — tests the VM bridging logic without UI.
@@ -97,5 +98,39 @@ final class NumberInputFieldTests: XCTestCase {
             expectation.fulfill()
         }
         wait(for: [expectation], timeout: 1.0)
+    }
+
+    // Test 7: live integer grouping appears while typing (en-US)
+    func testLiveGroupingEnUS() {
+        let bridge = makeBridge(initialValue: nil, locale: "en-US")
+        bridge.handleFocus(focused: true)
+        let exp = XCTestExpectation(description: "live grouped")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            bridge.userTyped("1000")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                XCTAssertEqual(bridge.displayText, "1,000")
+                bridge.userTyped("1,0009")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    XCTAssertEqual(bridge.displayText, "10,009")
+                    exp.fulfill()
+                }
+            }
+        }
+        wait(for: [exp], timeout: 3.0)
+    }
+
+    // Test 8: live grouping for vi-VN (grouping = ".", decimal = ",")
+    func testLiveGroupingViVN() {
+        let bridge = makeBridge(initialValue: nil, locale: "vi-VN")
+        bridge.handleFocus(focused: true)
+        let exp = XCTestExpectation(description: "live grouped vi-VN")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            bridge.userTyped("1000")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                XCTAssertEqual(bridge.displayText, "1.000")
+                exp.fulfill()
+            }
+        }
+        wait(for: [exp], timeout: 2.0)
     }
 }

@@ -36,9 +36,12 @@ class NumberInputViewModel(
             val current = _state.value
             if (focused) {
                 if (current !is NumberInputUiState.Editing) {
+                    // Enter Editing with the locale-correct formatted form as both rawText and
+                    // formattedText, so the user starts editing the grouped string they see.
+                    val carry = current.formattedText
                     _state.value = NumberInputUiState.Editing(
-                        rawText = current.rawText,
-                        formattedText = current.formattedText,
+                        rawText = carry,
+                        formattedText = carry,
                         value = current.value,
                         significantDigits = significantDigits,
                         locale = locale,
@@ -68,7 +71,7 @@ class NumberInputViewModel(
             }
             _state.value = NumberInputUiState.Editing(
                 rawText = newRawText,
-                formattedText = current.formattedText,
+                formattedText = formatter.formatLive(newRawText, locale),
                 value = newValue,
                 significantDigits = significantDigits,
                 locale = locale,
@@ -84,10 +87,12 @@ class NumberInputViewModel(
             val current = _state.value
             val currentValue = current.value ?: return@launch
             val toggled = -currentValue
-            val newRawText = toggled.toString()
+            // Use locale-aware formatted form as both rawText and formattedText so vi-VN/de-DE
+            // get the right decimal separator (Double.toString always uses '.').
+            val newRawText = formatter.format(toggled, significantDigits, locale)
             _state.value = NumberInputUiState.Editing(
                 rawText = newRawText,
-                formattedText = current.formattedText,
+                formattedText = newRawText,
                 value = toggled,
                 significantDigits = significantDigits,
                 locale = locale,
@@ -98,10 +103,9 @@ class NumberInputViewModel(
 
     fun onClear() {
         viewModelScope.launch {
-            val current = _state.value
             _state.value = NumberInputUiState.Editing(
                 rawText = "",
-                formattedText = current.formattedText,
+                formattedText = "",
                 value = null,
                 significantDigits = significantDigits,
                 locale = locale,

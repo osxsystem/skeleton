@@ -5,8 +5,8 @@ package dev.viethung.components.numberinput
  * See NUMBER-INPUT-PRD.md §7 and NUMBER-INPUT-UI.md §3.
  */
 sealed interface NumberInputUiState {
-    val rawText: String          // unformatted, what the user is typing
-    val formattedText: String    // what's shown when not focused
+    val rawText: String          // what the user is typing (may include grouping separators)
+    val formattedText: String    // grouped display string (live during Editing, full format on Idle/Committed)
     val value: Double?           // parsed numeric, null if empty
     val significantDigits: Int
     val locale: String           // BCP-47, e.g. "en-US"
@@ -23,7 +23,7 @@ sealed interface NumberInputUiState {
 
     data class Editing(
         override val rawText: String,
-        override val formattedText: String,    // last-known formatted; not re-computed mid-edit
+        override val formattedText: String,    // live-grouped integer portion; recomputed each keystroke
         override val value: Double?,
         override val significantDigits: Int,
         override val locale: String,

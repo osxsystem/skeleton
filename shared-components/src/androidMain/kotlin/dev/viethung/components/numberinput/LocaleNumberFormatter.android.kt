@@ -18,6 +18,20 @@ private class AndroidLocaleNumberFormatter : LocaleNumberFormatter {
         val df = java.text.DecimalFormat.getInstance(javaLocale) as java.text.DecimalFormat
         return try { df.parse(rawText)?.toDouble() } catch (e: Exception) { null }
     }
+
+    override fun formatLive(rawText: String, locale: String): String {
+        if (rawText.isEmpty()) return ""
+        val javaLocale = java.util.Locale.forLanguageTag(locale)
+        val df = java.text.DecimalFormat.getInstance(javaLocale) as java.text.DecimalFormat
+        df.isGroupingUsed = true
+        val symbols = df.decimalFormatSymbols
+        val groupSep = symbols.groupingSeparator.toString()
+        val decSep = symbols.decimalSeparator.toString()
+        return liveFormat(rawText, groupSep, decSep) { digits ->
+            val n = digits.toLongOrNull() ?: return@liveFormat digits
+            java.text.DecimalFormat("#,##0", symbols).format(n)
+        }
+    }
 }
 
 actual fun newLocaleNumberFormatter(): LocaleNumberFormatter = AndroidLocaleNumberFormatter()

@@ -75,15 +75,30 @@ targets:
     dependencies:
       - target: iosApp
 
+  iosAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: iosAppUITests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.viethung.skeleton.iosAppUITests
+        GENERATE_INFOPLIST_FILE: "YES"
+        TEST_TARGET_NAME: iosApp
+    dependencies:
+      - target: iosApp
+
 schemes:
   iosApp:
     build:
       targets:
         iosApp: all
         iosAppTests: [test]
+        iosAppUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
       targets:
         - iosAppTests
+        - iosAppUITests

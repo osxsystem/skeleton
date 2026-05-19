@@ -73,4 +73,51 @@ class LocaleNumberFormatterContractTest {
         val result = formatter.parse("", "en-US")
         assertNull(result)
     }
+
+    @Test
+    fun `formatLive 1000 en-US groups thousands`() {
+        assertEquals("1,000", formatter.formatLive("1000", "en-US"))
+    }
+
+    @Test
+    fun `formatLive 1234567 en-US groups millions`() {
+        assertEquals("1,234,567", formatter.formatLive("1234567", "en-US"))
+    }
+
+    @Test
+    fun `formatLive preserves decimal portion en-US`() {
+        assertEquals("1,000.5", formatter.formatLive("1000.5", "en-US"))
+        assertEquals("1,000.", formatter.formatLive("1000.", "en-US"))
+    }
+
+    @Test
+    fun `formatLive idempotent for already-grouped en-US`() {
+        assertEquals("1,000", formatter.formatLive("1,000", "en-US"))
+        assertEquals("10,009", formatter.formatLive("1,0009", "en-US"))
+    }
+
+    @Test
+    fun `formatLive minus alone preserved`() {
+        assertEquals("-", formatter.formatLive("-", "en-US"))
+    }
+
+    @Test
+    fun `formatLive empty returns empty`() {
+        assertEquals("", formatter.formatLive("", "en-US"))
+    }
+
+    @Test
+    fun `formatLive 1000 vi-VN uses dot grouping`() {
+        assertEquals("1.000", formatter.formatLive("1000", "vi-VN"))
+    }
+
+    @Test
+    fun `formatLive 1000 de-DE uses dot grouping`() {
+        assertEquals("1.000", formatter.formatLive("1000", "de-DE"))
+    }
+
+    @Test
+    fun `formatLive vi-VN preserves comma decimal`() {
+        assertEquals("1.000,5", formatter.formatLive("1000,5", "vi-VN"))
+    }
 }

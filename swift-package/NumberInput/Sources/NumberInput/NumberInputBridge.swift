@@ -36,13 +36,10 @@ final class NumberInputBridge: ObservableObject {
         subscriptionJob?.cancel(cause: nil)
     }
 
-    /// Returns a Binding<String> that reads displayText and writes through onTextChange.
-    /// The `focused` flag selects rawText (editing) vs formattedText (idle).
-    func textBinding(focused: Bool) -> Binding<String> {
-        Binding(
-            get: { self.displayText },
-            set: { self.viewModel.onTextChange(newRawText: $0) }
-        )
+    /// Forward a user-typed string to the Kotlin VM. The VM re-formats and the resulting
+    /// `formattedText` flows back through the StateFlow subscription into `displayText`.
+    func userTyped(_ newRawText: String) {
+        viewModel.onTextChange(newRawText: newRawText)
     }
 
     func handleFocus(focused: Bool) {
@@ -62,7 +59,7 @@ final class NumberInputBridge: ObservableObject {
     }
 
     private func apply(state: NumberInputUiState) {
-        displayText = (state is NumberInputUiStateEditing) ? state.rawText : state.formattedText
+        displayText = state.formattedText
         publishedValue = state.value?.doubleValue
         clearDisabled = state.rawText.isEmpty && state.value == nil
         signDisabled = !state.allowNegative || state.value == nil
