@@ -10,6 +10,7 @@ struct DashboardPlaceholder: View {
             Text("Dashboard")
                 .font(theme.typography.headlineMedium)
             NavigationLink("Number Input Showcase", destination: NumberInputShowcaseView())
+            NavigationLink("NumberInputKit Showcase", destination: NumberInputKitShowcaseView())
             Button("Log out", action: onLogout)
             Button(action: cycleTheme) {
                 Text(themeButtonLabel)

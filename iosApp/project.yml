@@ -23,6 +23,8 @@ settings:
 packages:
   NumberInput:
     path: ../swift-package/NumberInput
+  NumberInputKit:
+    path: ../swift-package/NumberInputKit
 
 targets:
   iosApp:
@@ -60,6 +62,7 @@ targets:
         embed: true
         codeSign: true
       - package: NumberInput
+      - package: NumberInputKit
 
   iosAppTests:
     type: bundle.unit-test
