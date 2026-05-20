@@ -1,0 +1,33 @@
+name: NumberInputKitFramework
+options:
+  bundleIdPrefix: dev.viethung
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    BUILD_LIBRARY_FOR_DISTRIBUTION: YES
+    SKIP_INSTALL: NO
+    GENERATE_INFOPLIST_FILE: YES
+    CODE_SIGN_IDENTITY: ""
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  NumberInputKit:
+    type: framework
+    platform: iOS
+    sources:
+      - path: Sources/NumberInputKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.viethung.NumberInputKit
+        DEFINES_MODULE: YES
+        ENABLE_MODULE_VERIFIER: NO
+        OTHER_LDFLAGS: -ObjC
+schemes:
+  NumberInputKit:
+    build:
+      targets:
+        NumberInputKit: all
+    archive:
+      config: Release

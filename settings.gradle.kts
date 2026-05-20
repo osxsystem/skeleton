@@ -22,6 +22,7 @@ include(
     ":shared-app",
     ":androidApp",
     ":server",
+    ":number-input",
 )
 
 // The reference checkout directory for AndroidX/Compose source code is intentionally
