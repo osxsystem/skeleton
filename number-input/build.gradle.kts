@@ -63,6 +63,9 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    // Pin Espresso 3.7.0+ — older versions call android.hardware.input.InputManager.getInstance(),
+    // which was removed in API 35 (Android 15). 3.7.0 uses InputManagerGlobal.getInstance() via reflection.
+    androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }

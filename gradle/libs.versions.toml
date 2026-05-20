@@ -24,6 +24,8 @@ firebase-bom            = "34.13.0"
 turbine                 = "1.2.1"
 kotest-assertions       = "5.9.1"
 
+androidx-test-espresso   = "3.7.0"
+
 [libraries]
 # Lifecycle / ViewModel
 androidx-lifecycle-viewmodel         = { module = "androidx.lifecycle:lifecycle-viewmodel",           version.ref = "androidx-lifecycle" }
@@ -81,6 +83,9 @@ turbine              = { module = "app.cash.turbine:turbine",           version.
 
 # Kotest assertions (commonTest — assertions only, NOT the Kotest engine)
 kotest-assertions-core = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest-assertions" }
+
+# Espresso pinned for API 35+ — older versions call android.hardware.input.InputManager.getInstance() which was removed in API 35.
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "androidx-test-espresso" }
 
 # KMMBridge
 # (plugin only — no library artifact)
