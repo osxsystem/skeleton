@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kmp.library)   // com.android.kotlin.multiplatform.library (D-14 / SCAF-03)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.sqldelight)
     alias(libs.plugins.vanniktech.publish)
 }
@@ -25,6 +26,8 @@ kotlin {
             baseName = "SkeletonCore"         // internal; umbrella is in :shared-components
             // SQLDelight NativeSqliteDriver requires libsqlite3 (D-18 / Pitfall 19)
             linkerOpts.add("-lsqlite3")
+            // Keychain APIs used by KeychainSessionStore (iosMain)
+            linkerOpts.addAll(listOf("-framework", "Security"))
         }
     }
 
@@ -53,6 +56,7 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android.driver)
+            implementation(libs.androidx.security.crypto)
         }
 
         iosMain.dependencies {

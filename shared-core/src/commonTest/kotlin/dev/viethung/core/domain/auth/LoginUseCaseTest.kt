@@ -1,7 +1,7 @@
 package dev.viethung.core.domain.auth
 
 import dev.viethung.core.data.auth.AuthRepository
-import dev.viethung.core.data.auth.SessionStore
+import dev.viethung.core.data.auth.FakeSessionStore
 import dev.viethung.core.data.remote.auth.AuthApi
 import dev.viethung.core.data.remote.auth.UserSession
 import kotlinx.coroutines.test.runTest
@@ -16,7 +16,7 @@ class LoginUseCaseTest {
     @Test
     fun invoke_trims_email_and_returns_session() = runTest {
         val api = RecordingAuthApi(result = expected)
-        val useCase = LoginUseCase(AuthRepository(api, SessionStore()))
+        val useCase = LoginUseCase(AuthRepository(api, FakeSessionStore()))
 
         val result = useCase.invoke("  user@example.com  ", "pw")
 
@@ -27,13 +27,13 @@ class LoginUseCaseTest {
 
     @Test
     fun blank_email_throws_IllegalArgumentException() = runTest {
-        val useCase = LoginUseCase(AuthRepository(RecordingAuthApi(result = expected), SessionStore()))
+        val useCase = LoginUseCase(AuthRepository(RecordingAuthApi(result = expected), FakeSessionStore()))
         assertFailsWith<IllegalArgumentException> { useCase.invoke("   ", "pw") }
     }
 
     @Test
     fun blank_password_throws_IllegalArgumentException() = runTest {
-        val useCase = LoginUseCase(AuthRepository(RecordingAuthApi(result = expected), SessionStore()))
+        val useCase = LoginUseCase(AuthRepository(RecordingAuthApi(result = expected), FakeSessionStore()))
         assertFailsWith<IllegalArgumentException> { useCase.invoke("a@b.com", "") }
     }
 

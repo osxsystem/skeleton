@@ -138,12 +138,15 @@ class AuthException(message: String) : RuntimeException(message)
 
 ```kotlin
 // :shared-core/.../data/auth/SessionStore.kt
-expect class SessionStore {
+interface SessionStore {
+    val session: StateFlow<UserSession?>
     suspend fun save(session: UserSession)
     suspend fun read(): UserSession?
     suspend fun clear()
 }
 ```
+
+> **Refinement (2026-05-19).** Shipped as `interface SessionStore` rather than the `expect class` originally sketched here. Reason: `commonTest` constructs `SessionStore` directly in four test files; the interface keeps those tests portable via an in-line `FakeSessionStore` private class, whereas an `expect class` with Android's Context-taking actual would require a JVM-only `actual` or major test churn. Architectural intent is unchanged — one common API, two platform implementations (`EncryptedSessionStore` on Android, `KeychainSessionStore` on iOS), bound via Koin platform modules. The `session: StateFlow` accessor was added to the contract for reactive auth gating; the three suspend methods match the original §8.1 spec.
 
 ```kotlin
 // :shared-app/.../auth/login/LoginUiState.kt

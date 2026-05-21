@@ -9,6 +9,9 @@ import dev.viethung.core.data.remote.auth.UserSession
 import dev.viethung.core.domain.auth.LoginUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -38,7 +41,7 @@ class LoginViewModelTest {
     }
 
     private fun makeViewModel(api: AuthApi): LoginViewModel =
-        LoginViewModel(LoginUseCase(AuthRepository(api, SessionStore())))
+        LoginViewModel(LoginUseCase(AuthRepository(api, FakeSessionStore())))
 
     private class StubAuthApi(
         private val result: UserSession? = null,
@@ -46,6 +49,14 @@ class LoginViewModelTest {
     ) : AuthApi {
         override suspend fun login(email: String, password: String): UserSession =
             error?.let { throw it } ?: result!!
+    }
+
+    private class FakeSessionStore : SessionStore {
+        private val _session = MutableStateFlow<UserSession?>(null)
+        override val session: StateFlow<UserSession?> = _session.asStateFlow()
+        override suspend fun save(session: UserSession) { _session.value = session }
+        override suspend fun read(): UserSession? = _session.value
+        override suspend fun clear() { _session.value = null }
     }
 
     @Test

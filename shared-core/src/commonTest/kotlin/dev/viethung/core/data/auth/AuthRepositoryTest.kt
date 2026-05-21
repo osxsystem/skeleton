@@ -16,23 +16,23 @@ class AuthRepositoryTest {
     @Test
     fun login_success_persists_session_and_returns_it() = runTest {
         val api = StubAuthApi(result = expected)
-        val store = SessionStore()
+        val store = FakeSessionStore()
         val repo = AuthRepository(api, store)
 
         val result = repo.login("a@b.com", "pw")
 
         assertEquals(expected, result)
-        assertEquals(expected, store.get())
+        assertEquals(expected, store.read())
     }
 
     @Test
     fun login_failure_propagates_and_leaves_store_untouched() = runTest {
         val api = StubAuthApi(error = AuthException("nope"))
-        val store = SessionStore()
+        val store = FakeSessionStore()
         val repo = AuthRepository(api, store)
 
         assertFailsWith<AuthException> { repo.login("a@b.com", "pw") }
-        assertNull(store.get())
+        assertNull(store.read())
     }
 
     private class StubAuthApi(

@@ -1,7 +1,6 @@
 package dev.viethung.core.di
 
 import dev.viethung.core.data.auth.AuthRepository
-import dev.viethung.core.data.auth.SessionStore
 import dev.viethung.core.data.remote.auth.AuthApi
 import dev.viethung.core.data.remote.auth.FakeAuthApi
 import dev.viethung.core.db.AppDatabase
@@ -18,7 +17,8 @@ val coreModule = module {
     single { AppDatabase(get<DatabaseDriverFactory>().createDriver()) }
 
     single<AuthApi> { FakeAuthApi() }
-    single { SessionStore() }
+    // SessionStore binding lives in per-platform modules
+    // (EncryptedSessionStore on Android, KeychainSessionStore on iOS)
     single { AuthRepository(get(), get()) }
     factory { LoginUseCase(get()) }
 }
