@@ -23,6 +23,8 @@ settings:
 packages:
   NumberInputKit:
     path: ../swift-package/NumberInputKit
+  SkylogKit:
+    path: ../swift-package/SkylogKit
 
 targets:
   iosApp:
@@ -60,6 +62,7 @@ targets:
         embed: true
         codeSign: true
       - package: NumberInputKit
+      - package: SkylogKit
 
   iosAppTests:
     type: bundle.unit-test

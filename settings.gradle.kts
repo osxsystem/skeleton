@@ -23,6 +23,8 @@ include(
     ":androidApp",
     ":server",
     ":number-input",
+    ":skylog-core",
+    ":skylog-ui",
 )
 
 // The reference checkout directory for AndroidX/Compose source code is intentionally

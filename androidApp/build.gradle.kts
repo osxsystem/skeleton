@@ -37,6 +37,7 @@ dependencies {
     implementation(project(":shared-app"))
     implementation(project(":shared-core"))    // shared-app uses implementation() so shared-core types aren't on androidApp compile classpath; add explicitly
     implementation(project(":number-input"))   // Standalone Number Input library — alongside the :shared-components version for demo comparison
+    implementation(project(":skylog-ui"))      // In-app log console
 
     // Compose BOM — use BOM, do not pin individual Compose versions (STACK.md §2)
     implementation(platform(libs.androidx.compose.bom))

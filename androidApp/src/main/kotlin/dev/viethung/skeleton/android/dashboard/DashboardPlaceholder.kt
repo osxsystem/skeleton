@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.viethung.core.theme.DesignTokens
 import dev.viethung.skeleton.android.showcase.NumberInputKitShowcaseScreen
+import dev.viethung.skeleton.android.showcase.SkylogShowcaseScreen
 
 @Composable
 fun DashboardPlaceholder(
@@ -25,11 +26,20 @@ fun DashboardPlaceholder(
     onCycleTheme: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    var showShowcase by rememberSaveable { mutableStateOf(false) }
-    if (showShowcase) {
-        NumberInputKitShowcaseScreen(onBack = { showShowcase = false })
-        return
+    var showNumberInput by rememberSaveable { mutableStateOf(false) }
+    var showSkylog by rememberSaveable { mutableStateOf(false) }
+
+    when {
+        showNumberInput -> {
+            NumberInputKitShowcaseScreen(onBack = { showNumberInput = false })
+            return
+        }
+        showSkylog -> {
+            SkylogShowcaseScreen(onClose = { showSkylog = false })
+            return
+        }
     }
+
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
@@ -40,8 +50,12 @@ fun DashboardPlaceholder(
             style = MaterialTheme.typography.headlineMedium,
         )
         Spacer(Modifier.height(DesignTokens.spacing.lg.dp))
-        Button(onClick = { showShowcase = true }) {
+        Button(onClick = { showNumberInput = true }) {
             Text("NumberInputKit Showcase")
+        }
+        Spacer(Modifier.height(DesignTokens.spacing.md.dp))
+        Button(onClick = { showSkylog = true }) {
+            Text("Skylog Showcase")
         }
         Spacer(Modifier.height(DesignTokens.spacing.md.dp))
         Button(onClick = onLogout) {
