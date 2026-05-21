@@ -21,8 +21,6 @@ settings:
       EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
 
 packages:
-  NumberInput:
-    path: ../swift-package/NumberInput
   NumberInputKit:
     path: ../swift-package/NumberInputKit
 
@@ -61,7 +59,6 @@ targets:
       - framework: ../shared-app/build/XCFrameworks/debug/SkeletonApp.xcframework
         embed: true
         codeSign: true
-      - package: NumberInput
       - package: NumberInputKit
 
   iosAppTests:

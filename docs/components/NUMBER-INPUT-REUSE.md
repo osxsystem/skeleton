@@ -2,118 +2,47 @@
 
 | Field | Value |
 |---|---|
-| **Status** | Reference — companion to PRD/UI/Plan |
-| **PRD** | [`NUMBER-INPUT-PRD.md`](./NUMBER-INPUT-PRD.md) |
+| **Status** | Reference — describes the post-extraction architecture |
+| **PRD** | [`NUMBER-INPUT-PRD.md`](./NUMBER-INPUT-PRD.md) — original design (superseded; see §3) |
 | **UI spec** | [`NUMBER-INPUT-UI.md`](./NUMBER-INPUT-UI.md) |
-| **Plan** | [`NUMBER-INPUT-IMPLEMENTATION-PLAN.md`](./NUMBER-INPUT-IMPLEMENTATION-PLAN.md) |
-| **Document version** | 0.1 (2026-05-19) |
+| **Plan** | [`NUMBER-INPUT-IMPLEMENTATION-PLAN.md`](./NUMBER-INPUT-IMPLEMENTATION-PLAN.md) — original plan (superseded; see §3) |
+| **Document version** | 0.2 (2026-05-21) |
 
-> **Scope of this doc:** what's actually shared vs platform-specific, and how to reuse this component in a pure-iOS-native project that doesn't use KMP.
-
----
-
-## 1. What's Shared (Kotlin `commonMain`)
-
-The **business logic** lives once, in `:shared-components/commonMain`:
-
-- `NumberInputViewModel` — the state machine (Idle / Editing / Committed transitions; `onTextChange`, `onToggleSign`, `onClear`, `onCommit`).
-- `NumberInputUiState` — the sealed state types.
-- `NumberInputConfig` — the API surface (`significantDigits`, `locale`, `allowNegative`, `placeholder`).
-- `LocaleNumberFormatter` interface.
-- The `liveFormat` helper that does the grouping algorithm.
-- All `formatLive` semantics: split on decimal separator, strip grouping, regroup integer portion, preserve sign and partial decimal.
-
-Both Android and iOS run **the same Kotlin code** for all of that. Same state machine, same grouping rules, same edge-case handling. A bug fix to `formatLive` lands in both platforms simultaneously.
+> **Scope of this doc:** how to consume the Number Input, and the trade-off behind the standalone-library architecture.
 
 ---
 
-## 2. What's Platform-Specific (Necessarily)
+## 1. Architecture (current)
 
-Only two surfaces:
+Two standalone libraries. No shared KMP source.
 
-### 2.1 `LocaleNumberFormatter` `actual`
+| Platform | Library | Path | Distribution |
+|---|---|---|---|
+| Android | `:number-input` | [`number-input/`](../../number-input/) | Gradle AAR (`dev.viethung:number-input`) |
+| iOS | `NumberInputKit` | [`swift-package/NumberInputKit/`](../../swift-package/NumberInputKit/) | Swift Package (source) or XCFramework |
 
-- iOS uses `NSNumberFormatter`.
-- Android uses `java.text.DecimalFormat` + `DecimalFormatSymbols`.
-
-Both are ~30 lines, and both delegate the grouping algorithm to the shared `liveFormat` helper in commonMain. They exist because each platform has a different native formatter API; Kotlin `commonMain` has no locale-aware formatter built in.
-
-### 2.2 The View Layer (UI)
-
-By deliberate architectural choice (CLAUDE.md §3 — "MVVM with shared `androidx.lifecycle.ViewModel` … native UI per platform"):
-
-- **Android:** Jetpack Compose.
-- **iOS:** SwiftUI + UIKit (`UIViewRepresentable` wrapping `UITextField`).
-
-The iOS `NumberInputUITextField` / `NumberInputBridge` / programmatic `UIToolbar` exist because:
-
-- SwiftUI `TextField` ignores mid-edit binding writes — we had to drop to `UITextField` to make live re-formatting visible.
-- `.decimalPad` keyboard locale needs delegate-level substitution so vi-VN/de-DE fields accept the device's decimal character.
-- The iOS keyboard accessory toolbar (Done / Clear / ±) has no Compose analog.
-
-**None of that view-layer code contains business logic** — it's all glue that calls into the shared Kotlin VM via `NumberInputViewModelHelperKt`.
+Both expose the same public API: `NumberInputViewModel`, `NumberInputUiState`, `NumberInputConfig`, `LocaleNumberFormatter`, `NumberInputField`. The implementations are intentionally **duplicated** — Kotlin one side, pure-Swift the other. Neither depends on `:shared-core`, `:shared-components`, or `SkeletonKit.xcframework`.
 
 ---
 
-## 3. Reusing in a Pure-iOS-Native Project
+## 2. Trade-off
 
-Two paths.
+**Why duplicate?** Consumer reach. A pure-Compose Android app with no KMP setup pulls `:number-input` as a normal AAR. A pure-Swift iOS app pulls `NumberInputKit` as a normal SPM package. No KMP toolchain required on either side.
 
-### 3.1 Path A — Use this Swift Package as-is (recommended)
+**Cost.** ~200 LOC of state machine + locale formatting, written twice. The KMP `expect`/`actual` bridge was deleted because the maintenance burden (XCFramework rebuilds + Swift ObjC bridge for `NumberInputViewModelHelper`) outweighed the LOC savings.
 
-The Swift Package (`swift-package/NumberInput/`) depends on `SkeletonKit.xcframework`, which contains the shared KMP business logic. A pure-Swift consumer project pulls in:
-
-- The Swift Package (the SwiftUI/UIKit views).
-- The XCFramework binary (the Kotlin VM + formatter).
-
-The XCFramework is a few MB, has no runtime dependencies beyond what Kotlin/Native produces, and the Swift Package's `Package.swift` already declares the `binaryTarget`. A pure Swift app consumes it via `.package(path: ...)` like any other SPM dependency.
-
-**Trade-offs:**
-
-| Pro | Con |
-|---|---|
-| Zero code duplication | Adds an XCFramework binary to the consumer's bundle |
-| Bug fixes in `formatLive` / VM land automatically | Consumer needs to build/refresh the XCFramework when the Kotlin side changes |
-| Locale-correct formatting validated by KMP contract tests | Consumer tooling has to handle the binary target (Xcode + SPM handle this cleanly) |
-
-### 3.2 Path B — Pure-Swift Rewrite
-
-If the consumer project must not contain any Kotlin, port the following to Swift:
-
-- The state machine (~140 LOC of `NumberInputViewModel`).
-- `formatLive` (~30 LOC plus the locale-aware decimal/grouping split via `Locale`/`NumberFormatter`).
-- The sealed state types.
-
-Total: ~200 lines of Swift. Doable, but the consumer loses the shared bug-fix surface — any future fix lands twice.
+**Drift risk.** The two implementations can diverge silently. Mitigation (not yet wired): a shared JSON contract fixture (`input, locale, sigDigits, allowNegative → display`) consumed by both test suites, CI failure on any divergence. Tracked in the 2026-05-21 `/ck-predict` risk report.
 
 ---
 
-## 4. Decision Guide
+## 3. Historical note
 
-| Situation | Recommendation |
-|---|---|
-| Greenfield iOS-only project, willing to ship an XCFramework | **Path A** — fastest reuse, smallest maintenance footprint |
-| Existing iOS-only project with strict "no Kotlin/Native binaries" policy | **Path B** — port the ~200 lines |
-| Multi-platform project (KMP) | Use the modules directly (`:shared-components`) — no Swift Package needed |
-| Just want to copy the SwiftUI styling but not the VM | Path B, but extract only the view layer; supply your own state holder |
+The original design (PRD / Implementation Plan, dated 2026-05-19) placed the business logic in `:shared-components/commonMain` and exposed it to iOS via `SkeletonKit.xcframework`. That model shipped successfully — see [`reports/numberinput-smoke-2026-05-19.md`](./reports/numberinput-smoke-2026-05-19.md). It was extracted to standalone libraries on 2026-05-20 to drop the KMP dependency for non-KMP consumers. The PRD §11 / §14 decisions and Implementation Plan §4.6 / Steps 7-9 describe the now-removed bridge architecture and are kept as a design record.
 
 ---
 
-## 5. The Architectural Principle
+## 4. References
 
-> Share logic, write UI natively.
-
-This component does not duplicate behavior. It duplicates only the unavoidable platform glue (formatter `actual`s + native views). The VM, the state types, and the formatting algorithm are written **once** in `commonMain`.
-
-If a future bug requires changing the live-grouping rule, you change `liveFormat` in `commonMain` and rebuild the XCFramework — both Android and iOS pick up the fix without any view-layer changes.
-
----
-
-## 6. References
-
-- `shared-components/src/commonMain/kotlin/dev/viethung/components/numberinput/` — the shared logic.
-- `shared-components/src/iosMain/kotlin/dev/viethung/components/numberinput/` — iOS `actual` + Swift bridge helper.
-- `shared-components/src/androidMain/kotlin/dev/viethung/components/numberinput/` — Android `actual`.
-- `swift-package/NumberInput/` — SwiftUI/UIKit views consumed by iOS apps.
-- [`../ARCHITECTURE.md`](../ARCHITECTURE.md) — overall KMP module layout.
-- [`../../CLAUDE.md`](../../CLAUDE.md) §3 — state-ownership and platform-binding rules.
+- [`number-input/README.md`](../../number-input/README.md) — Android consumer guide
+- [`swift-package/NumberInputKit/README.md`](../../swift-package/NumberInputKit/README.md) — iOS consumer guide
+- [`../../CLAUDE.md`](../../CLAUDE.md) §3 — overall state-ownership and platform-binding rules (note: this component is now an exception to "share logic, write UI natively" — it duplicates logic intentionally)

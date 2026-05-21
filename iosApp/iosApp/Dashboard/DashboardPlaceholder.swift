@@ -9,8 +9,7 @@ struct DashboardPlaceholder: View {
         VStack(spacing: theme.spacing.md) {
             Text("Dashboard")
                 .font(theme.typography.headlineMedium)
-            NavigationLink("Number Input Showcase", destination: NumberInputShowcaseView())
-            NavigationLink("NumberInputKit Showcase", destination: NumberInputKitShowcaseView())
+            NavigationLink("Number Input Showcase", destination: NumberInputKitShowcaseView())
             Button("Log out", action: onLogout)
             Button(action: cycleTheme) {
                 Text(themeButtonLabel)

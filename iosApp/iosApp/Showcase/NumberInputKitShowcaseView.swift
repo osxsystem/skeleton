@@ -1,8 +1,6 @@
 import SwiftUI
 import NumberInputKit
 
-/// Demo screen exercising the pure-Swift NumberInputKit package (alongside the existing
-/// NumberInputShowcaseView which uses the SkeletonKit-backed swift-package/NumberInput).
 struct NumberInputKitShowcaseView: View {
     @State private var enUsValue: Double? = 1234.5
     @State private var viVnValue: Double? = 1234.5

@@ -1,5 +1,7 @@
 # Reusable Number Input — Technical Implementation Plan
 
+> **POST-SHIP UPDATE 2026-05-21:** §4.6 (`NumberInputViewModelHelper.kt` iOS bridge) and Steps 7-9 (in-repo `swift-package/NumberInput/` consuming `SkeletonKit.xcframework`) were superseded by the standalone-library extraction on 2026-05-20. The KMP source under `:shared-components/.../numberinput/`, the in-repo bridge package, and `scripts/build-numberinput-xcframework.sh` have been deleted. The body below records the original plan as executed through 2026-05-19; see [`NUMBER-INPUT-REUSE.md`](./NUMBER-INPUT-REUSE.md) §1 for the current architecture.
+
 **Status:** **Approved 2026-05-19** — PRD §14 sign-off complete; ready for Sonnet execution pass
 **Owner:** _to be assigned (Sonnet dig)_
 **Audience:** Engineer (or Sonnet agent) implementing the component in this skeleton

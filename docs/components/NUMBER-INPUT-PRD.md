@@ -1,5 +1,7 @@
 # Reusable Number Input — Product Requirements Document
 
+> **POST-SHIP UPDATE 2026-05-21:** The KMP-bridge architecture described in §11 and §14 (business logic in `:shared-components/commonMain`, iOS bridge via `SkeletonKit.xcframework`, in-repo `swift-package/NumberInput/`) was extracted to standalone libraries (`:number-input` AAR + `NumberInputKit` SPM) on 2026-05-20 and the KMP source + iOS SPM bridge package were deleted. The body below records the original design as approved on 2026-05-19; see [`NUMBER-INPUT-REUSE.md`](./NUMBER-INPUT-REUSE.md) §1 for the current architecture.
+
 | Field | Value |
 |---|---|
 | **Status** | **Approved 2026-05-19** — §14 decisions resolved; ready for implementation |
