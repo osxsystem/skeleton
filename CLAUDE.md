@@ -153,6 +153,21 @@ fun ProfileScreen(viewModel: ProfileViewModel = viewModel()) {
 **Validation cadence per change:**
 1. Edit → 2. Targeted test → 3. Module test → 4. Cross-platform smoke (`./gradlew check`) only if you touched shared API surface.
 
+**Debugging & bug-fix sessions (load-bearing):**
+
+When you are diagnosing a bug — the user said "fix", "investigate", "debug", "why is X happening", or invoked `/investigate` — you MUST use Skylog for any diagnostic instrumentation you add. No exceptions.
+
+- `Skylog.d { "..." }` for high-volume traces; `Skylog.i` for important state transitions; `Skylog.w` / `Skylog.e` / `Skylog.a` for problems and assertion-class events.
+- Tag with `tag = "ClassName.method"` so the user can filter the in-app console to just your instrumentation.
+- Use structured fields (`fields = mapOf("key" to value)`) instead of string concatenation when capturing variable values — they survive the filter pipeline and render in the console as key/value pairs.
+- **Never** add `println`, `Log.d/v/i/w/e`, `NSLog`, `print(...)`, or `os_log(...)` for diagnostic purposes. Skylog fans out to Logcat (Android), OSLog (iOS), and stdout (JVM) via platform writers, so calling them directly is redundant and bypasses the in-app console.
+- After the bug is fixed, decide explicitly per call site: keep the instrumentation only if it has forward debugging value (call it out in the commit message), otherwise delete it. Don't leave dead instrumentation as drift.
+- Mirror the same `tag` and `fields` shape across Kotlin and Swift when the bug spans both platforms — parity matters for triage.
+
+**Why this is load-bearing:** Skylog (`:skylog-core` engine + `:skylog-ui` Compose console + `SkylogKit` SwiftUI mirror, shipped 2026-05-21) is the single diagnostic channel for this codebase. Mixed instrumentation styles bypass the in-app console the team uses for triage, fragment severity routing, and create inconsistent log noise across platforms.
+
+API references: `skylog-core/src/commonMain/kotlin/dev/viethung/skylog/Skylog.kt` (Kotlin), `swift-package/SkylogKit/Sources/SkylogKit/Skylog.swift` (Swift). In-app console: tap the "Skylog Showcase" row on either platform's Dashboard during development.
+
 ---
 
 ## 7. Setup & Build
