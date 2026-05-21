@@ -7,8 +7,9 @@ formatting, configurable significant digits, optional sign-toggle, and a clear b
 |---|---|
 | **Platforms** | iOS 16+ |
 | **Package** | `NumberInputKit` (SwiftPM) |
-| **Distribution** | SPM source target, or `NumberInputKit.xcframework` via `scripts/build-numberinput-xcframework.sh` |
+| **Distribution** | SwiftPM (git URL or local path) |
 | **License** | MIT |
+| **Release process** | [`RELEASING.md`](./RELEASING.md) · [`CHANGELOG.md`](./CHANGELOG.md) |
 
 This package is the **independent, pure-Swift** port of the Number Input component. It has
 **no dependency** on Kotlin/Native, on `SkeletonKit.xcframework`, or on the rest of the
@@ -17,20 +18,35 @@ skeleton repo. The Android counterpart ships separately as the
 
 ## Install
 
-### Swift Package Manager (source)
+### Git URL (production)
+
+NumberInputKit is published to a dedicated standalone repo via `git subtree split`
+from this monorepo (see [`RELEASING.md`](./RELEASING.md)). Consumers depend on
+that repo's git URL, not the skeleton monorepo.
 
 ```swift
-.package(path: "../swift-package/NumberInputKit"),
+// Package.swift
+dependencies: [
+    .package(url: "https://github.com/osxsystem/NumberInputKit.git", from: "0.1.0")
+],
+targets: [
+    .target(name: "MyApp", dependencies: [
+        .product(name: "NumberInputKit", package: "NumberInputKit")
+    ])
+]
 ```
 
-### Binary distribution (XCFramework)
+Or in Xcode: **File → Add Package Dependencies** → paste the repo URL → pick
+version range → add the `NumberInputKit` library to your target.
 
-```sh
-./scripts/build-numberinput-xcframework.sh
-# output: swift-package/NumberInputKit/build/NumberInputKit.xcframework
+### Local path (in-repo dev)
+
+When developing inside the skeleton monorepo (the `iosApp` showcase uses this
+mode), reference the package directly:
+
+```swift
+.package(path: "../swift-package/NumberInputKit")
 ```
-
-Then reference it via a `.binaryTarget` in your `Package.swift`.
 
 ## Usage
 
