@@ -18,6 +18,10 @@ DerivedData/
 iosApp/iosApp.xcodeproj/
 iosApp/iosApp/Info.plist
 
+# Swift Package Manager (build cache + per-package state)
+swift-package/*/.build/
+swift-package/*/.swiftpm/
+
 # AI tooling (local, non-shareable)
 .claude/
 .agents/
