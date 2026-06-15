@@ -14,6 +14,11 @@ struct NumberInputUITextField: UIViewRepresentable {
     let placeholderColor: UIColor
     let tintColor: UIColor
     let font: UIFont
+    var textAlignment: NSTextAlignment = .natural
+    var isEnabled: Bool = true
+    /// Maximum number of digits allowed after the decimal separator while typing.
+    /// Negative means no cap. Driven by the field's `significantDigits`.
+    var maxFractionDigits: Int = -1
     /// The field's locale decimal separator. The `.decimalPad` keyboard offers only the device's
     /// locale decimal — if it differs, the delegate substitutes on keypress so vi-VN/de-DE
     /// fields can accept decimals on an en-US device.
@@ -31,6 +36,8 @@ struct NumberInputUITextField: UIViewRepresentable {
         tf.delegate = context.coordinator
         tf.addTarget(context.coordinator, action: #selector(Coordinator.textChanged(_:)), for: .editingChanged)
         tf.font = font
+        tf.textAlignment = textAlignment
+        tf.isEnabled = isEnabled
         tf.tintColor = tintColor
         tf.textColor = textColor
         tf.attributedPlaceholder = NSAttributedString(
@@ -43,6 +50,8 @@ struct NumberInputUITextField: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: UITextField, context: Context) {
+        if uiView.isEnabled != isEnabled { uiView.isEnabled = isEnabled }
+        if uiView.textAlignment != textAlignment { uiView.textAlignment = textAlignment }
         if uiView.text != text {
             uiView.text = text
             if let end = uiView.position(from: uiView.beginningOfDocument, offset: text.count) {
@@ -72,8 +81,21 @@ struct NumberInputUITextField: UIViewRepresentable {
             shouldChangeCharactersIn range: NSRange,
             replacementString string: String
         ) -> Bool {
-            guard string.count == 1 else { return true }
             let fieldDec = parent.decimalSeparator
+
+            // Cap the number of fractional digits. Deletions (empty replacement) always pass.
+            if !string.isEmpty, parent.maxFractionDigits >= 0 {
+                let current = textField.text ?? ""
+                if let r = Range(range, in: current) {
+                    let prospective = current.replacingCharacters(in: r, with: string)
+                    if let sep = prospective.range(of: fieldDec) {
+                        let fraction = prospective[sep.upperBound...]
+                        if fraction.count > parent.maxFractionDigits { return false }
+                    }
+                }
+            }
+
+            guard string.count == 1 else { return true }
             let isDigit = string.allSatisfy { $0.isNumber }
             if !isDigit && string != fieldDec && (string == "." || string == ",") {
                 let current = textField.text ?? ""

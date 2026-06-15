@@ -6,7 +6,7 @@ import PackageDescription
 
 let package = Package(
     name: "NumberInputKit",
-    platforms: [.iOS(.v16)],
+    platforms: [.iOS(.v15)],
     products: [
         .library(name: "NumberInputKit", targets: ["NumberInputKit"])
     ],
