@@ -75,6 +75,14 @@ public struct NumberInputField: View {
             .onChange(of: focused) { isFocused in
                 vm.onFocusChanged(focused: isFocused)
             }
+            .onChange(of: value) { newValue in
+                // Reflect external binding changes (e.g. a parent re-fetch) into the field,
+                // but never while the user is editing. The VM no-ops if the value is unchanged,
+                // which also breaks the VM -> binding -> VM feedback loop.
+                if !focused {
+                    vm.syncExternalValue(newValue)
+                }
+            }
             .onReceive(vm.$state) { newState in
                 value = newState.payload.value
             }

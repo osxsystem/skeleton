@@ -115,6 +115,19 @@ public final class NumberInputViewModel: ObservableObject {
         commitAndSetIdle()
     }
 
+    /// Adopt an externally-driven value (e.g. a parent binding refreshed from the network) and
+    /// re-render the displayed text. No-op when it already matches the current value. Callers
+    /// should avoid invoking this mid-edit so in-progress typing isn't clobbered.
+    public func syncExternalValue(_ newValue: Double?) {
+        let clamped: Double? = {
+            if !allowNegative, let v = newValue, v < 0.0 { return 0.0 }
+            return newValue
+        }()
+        guard clamped != state.payload.value else { return }
+        let formatted = clamped.map { formatter.format($0, significantDigits: significantDigits, locale: locale) } ?? ""
+        state = .idle(payload(rawText: formatted, formattedText: formatted, value: clamped))
+    }
+
     // MARK: - Private
 
     private func commitAndSetIdle() {
