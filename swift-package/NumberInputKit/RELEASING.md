@@ -5,7 +5,7 @@ NumberInputKit lives inside the KMP skeleton monorepo at
 a **dedicated standalone repo** for SwiftPM consumers. Releases are one-way
 mirrors via `git subtree split`.
 
-> SwiftPM does not support subdirectory packages in a git URL dependency —
+> SwiftPM does not support subdirectory packages in a git URL dependency, so
 > `Package.swift` must sit at the root of the repo the consumer points at.
 > The subtree-split flow below produces exactly that.
 
@@ -13,8 +13,8 @@ mirrors via `git subtree split`.
 
 ## 1. Versioning
 
-Semantic Versioning (https://semver.org). Tag format is bare — `0.1.0`,
-not `v0.1.0` — matching the convention used by Apple's own Swift packages
+Semantic Versioning (https://semver.org). Tag format is bare: `0.1.0`,
+not `v0.1.0`, matching the convention used by Apple's own Swift packages
 (`swift-algorithms`, `swift-collections`, etc.).
 
 | Version range | Policy |
@@ -33,7 +33,7 @@ not `v0.1.0` — matching the convention used by Apple's own Swift packages
         -destination 'platform=iOS Simulator,name=iPhone 15' \
         -sdk iphonesimulator
       ```
-- [ ] Public API surface audited against the previous tag (manual diff for now —
+- [ ] Public API surface audited against the previous tag (manual diff for now;
       no automated API diff in CI yet).
 - [ ] `CHANGELOG.md` updated:
       - Move pending items from `[Unreleased]` into a new `## [X.Y.Z] — YYYY-MM-DD` section.
@@ -61,14 +61,14 @@ monorepo) and `numberinputkit-public` (the standalone consumer-facing repo).
 
 Run from the monorepo root.
 
-**Step 1 — commit the CHANGELOG bump on `main`:**
+**Step 1: commit the CHANGELOG bump on `main`:**
 
 ```sh
 git add swift-package/NumberInputKit/CHANGELOG.md
-git commit -m "NumberInputKit 0.X.Y"
+git commit -m "NumberInputKit X.Y.Z"
 ```
 
-**Step 2 — split the subdirectory into a release branch:**
+**Step 2: split the subdirectory into a release branch:**
 
 ```sh
 git subtree split --prefix=swift-package/NumberInputKit -b numberinputkit-release
@@ -78,7 +78,7 @@ This synthesizes a new branch whose root is the contents of
 `swift-package/NumberInputKit/`. The synthesized history mirrors only the
 commits that touched that subdirectory.
 
-**Step 3 — push the release branch as the public repo's `main`:**
+**Step 3: push the release branch as the public repo's `main`:**
 
 ```sh
 git push numberinputkit-public numberinputkit-release:main
@@ -86,17 +86,17 @@ git push numberinputkit-public numberinputkit-release:main
 
 For subsequent releases this is a fast-forward as long as you only ever publish
 via subtree split. If GitHub rejects the push as non-fast-forward, you've
-diverged — investigate before force-pushing.
+diverged. Investigate before force-pushing.
 
-**Step 4 — tag the released commit in the public repo:**
+**Step 4: tag the released commit in the public repo:**
 
 ```sh
 git fetch numberinputkit-public main
-git tag --annotate 0.X.Y numberinputkit-public/main -m "NumberInputKit 0.X.Y"
-git push numberinputkit-public 0.X.Y
+git tag --annotate X.Y.Z numberinputkit-public/main -m "NumberInputKit X.Y.Z"
+git push numberinputkit-public X.Y.Z
 ```
 
-**Step 5 — clean up the local release branch:**
+**Step 5: clean up the local release branch:**
 
 ```sh
 git branch -D numberinputkit-release
@@ -109,7 +109,7 @@ git branch -D numberinputkit-release
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/osxsystem/NumberInputKit.git", from: "0.1.0")
+    .package(url: "https://github.com/osxsystem/NumberInputKit.git", from: "2.4.0")
 ],
 targets: [
     .target(name: "MyApp", dependencies: [
@@ -126,11 +126,11 @@ the version range → add the `NumberInputKit` library.
 ## 6. Yanking a bad release
 
 ```sh
-git push numberinputkit-public :0.X.Y   # delete the remote tag
+git push numberinputkit-public :X.Y.Z   # delete the remote tag
 ```
 
-Then bump the patch and re-release. **Do not rewrite an existing tag** — SwiftPM
-caches resolved versions, and a silent change to `0.X.Y` will be ignored by
+Then bump the patch and re-release. **Do not rewrite an existing tag.** SwiftPM
+caches resolved versions, and a silent change to `X.Y.Z` will be ignored by
 already-resolved consumers, producing exactly the kind of phantom divergence
 that's hardest to debug.
 
@@ -140,7 +140,7 @@ that's hardest to debug.
 
 - The monorepo's `iosApp/` continues to consume NumberInputKit via local path
   (`iosApp/project.yml`). Local-path consumption tracks `main` in real time and
-  bypasses the tag flow — useful for dev, but be careful that you don't ship a
+  bypasses the tag flow. This is useful for development, but do not ship a
   feature in the iOS showcase that hasn't been tagged for external consumers.
 - `git subtree split` is incremental and idempotent: running it twice in a row
   with no new commits produces the same SHA.

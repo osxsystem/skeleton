@@ -1,8 +1,7 @@
 # NumberInputKit 2.4.0 release notes
 
 Version 2.4.0 aligns the Swift package with the Compose number-input component's configuration, state, formatting, styling, and optional keypad behavior.
-This document describes the planned release.
-No 2.4.0 commit or tag exists yet.
+It was released on 2026-09-03.
 
 ## Behavior changes
 
@@ -66,7 +65,7 @@ The package manifest declares iOS 15+ and macOS 12+.
 - The Swift built-in keypad is installed as `UITextField.inputView`.
   The Compose counterpart requires `NumberInputHost` to place its keypad and toolbar at the bottom of the window.
 
-## Validation required before release
+## Release validation
 
 Run from the skeleton repository root:
 
@@ -109,20 +108,19 @@ Use the release boundaries below after all implementation and validation work fi
 
 ### Skeleton repository: NumberInputKit package release
 
-The 2.4.0 package commit owns these paths:
+The 2.4.0 package release owns these paths:
 
 ```text
 swift-package/NumberInputKit/Package.swift
 swift-package/NumberInputKit/README.md
+swift-package/NumberInputKit/CHANGELOG.md
+swift-package/NumberInputKit/RELEASING.md
 swift-package/NumberInputKit/docs/release-notes-2.4.0.md
 swift-package/NumberInputKit/Sources/NumberInputKit/**
 swift-package/NumberInputKit/Tests/NumberInputKitTests/**
 ```
 
 The source and test globs include the tracked removals of `NumberInputTheme.swift`, `NumberInputUIState.swift`, `NumberInputViewModel.swift`, and `NumberInputViewModelTests.swift`.
-`swift-package/NumberInputKit/CHANGELOG.md` and `RELEASING.md` are currently clean and are not part of the agent-authored change set.
-Repository policy requires a maintainer, not an agent, to update `CHANGELOG.md` before release.
-
 ### Skeleton repository: related but separate Number Input work
 
 These dirty paths belong to the Android counterpart, sample applications, or their dependency wiring.
@@ -216,18 +214,8 @@ docs/agents/issue-tracker.md
 docs/agents/triage-labels.md
 ```
 
-## Future commit and tag sequence
+## Release flow
 
-Do not execute these steps until the package tests, application build, and simulator scenarios pass.
-
-1. In the skeleton repository, review and stage only `swift-package/NumberInputKit/` package source, tests, manifest, README, release notes, and the maintainer-updated changelog.
-2. Commit the isolated 2.4.0 package change on `feat/numberinputkit-2.4.0`.
-3. Commit Android parity, sample application, and dependency-wiring work separately after removing both authentication bypasses.
-4. In OpenFreightOne, stage and commit only the eight integration paths listed above after full build and simulator verification.
-5. Merge the reviewed skeleton package commit into the branch used to publish the monorepo.
-6. Run `git subtree split --prefix=swift-package/NumberInputKit -b numberinputkit-release` from the skeleton repository root.
-7. Inspect the split branch and push it as `numberinputkit-public/main` only after human approval.
-8. Fetch `numberinputkit-public/main`, create annotated tag `2.4.0` on that exact commit, and push the tag only after human approval.
-9. Confirm a clean standalone checkout resolves `.package(..., from: "2.4.0")` and passes both test commands.
-
-No commit, tag, merge, push, reset, clean, or branch deletion was performed while preparing this document.
+The monorepo package is mirrored to `osxsystem/NumberInputKit` with the subtree-split procedure in `RELEASING.md`.
+The standalone repository carries the consumer-facing `2.4.0` tag, and OpenFreightOne resolves that version through SwiftPM.
+Android parity and sample-application changes remain separate from the Swift package release.
