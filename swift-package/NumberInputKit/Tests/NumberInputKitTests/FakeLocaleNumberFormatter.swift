@@ -40,6 +40,10 @@ struct FakeLocaleNumberFormatter: LocaleNumberFormatter {
         return Double(normalised)
     }
 
+    func decimalSeparator(locale: String) -> String { separators(locale: locale).decimal }
+
+    func groupingSeparator(locale: String) -> String { separators(locale: locale).grouping }
+
     func formatLive(_ rawText: String, locale: String) -> String {
         let (groupSep, decSep) = separators(locale: locale)
         return liveFormat(rawText, groupingSeparator: groupSep, decimalSeparator: decSep) { digits in

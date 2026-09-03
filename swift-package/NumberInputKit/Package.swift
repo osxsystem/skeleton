@@ -6,7 +6,9 @@ import PackageDescription
 
 let package = Package(
     name: "NumberInputKit",
-    platforms: [.iOS(.v15)],
+    // macOS is declared so `swift test` can build and run the platform-free logic layer on the
+    // host. Everything that touches UIKit is behind `#if canImport(UIKit)`.
+    platforms: [.iOS(.v15), .macOS(.v12)],
     products: [
         .library(name: "NumberInputKit", targets: ["NumberInputKit"])
     ],
